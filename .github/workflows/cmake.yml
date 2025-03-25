@@ -34,15 +34,5 @@ jobs:
         sudo apt-get install autoconf automake libtool pkg-config libltdl-dev libx11-dev libxft-dev libxext-dev 
 
     - name: Run Workflow
-      if: ${{matrix.os == 'ubuntu-latest'}}
-      run: (cmake --workflow --preset default; exit 0)
-
-    - name: Run Workflow
       if: ${{matrix.os != 'ubuntu-latest'}}
       run: cmake --workflow --preset default
-
-    - name: Print Failure Log
-      if: ${{matrix.os == 'ubuntu-latest'}}
-      run: |
-        cat /home/runner/work/scintilla-example/scintilla-example/vcpkg/buildtrees/libxcrypt/autoconf-x64-linux-out.log
-        cat /home/runner/work/scintilla-example/scintilla-example/vcpkg/buildtrees/libxcrypt/autoconf-x64-linux-err.log
