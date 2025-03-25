@@ -31,7 +31,7 @@ jobs:
       if: ${{matrix.os == 'ubuntu-latest'}}
       run: |
         sudo apt-get update
-        sudo apt-get install autoconf automake libtool pkg-config libltdl-dev libx11-dev libxft-dev libxext-dev libxi-dev libxtst-dev libxkbcommon-x11-0
+        sudo apt-get install autoconf automake libtool pkg-config libltdl-dev libx11-dev libxft-dev libxext-dev libxi-dev libxtst-dev libxkbcommon-x11-0 libxrandr-dev
 
     - name: Run Workflow
       run: cmake --workflow --preset default
