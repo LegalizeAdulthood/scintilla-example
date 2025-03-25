@@ -1,8 +1,8 @@
-[![CMake workflow](https://github.com/LegalizeAdulthood/utahcpp-project-template/actions/workflows/cmake.yml/badge.svg)](https://github.com/LegalizeAdulthood/utahcpp-project-template/actions/workflows/cmake.yml)
+[![CMake workflow](https://github.com/LegalizeAdulthood/scintilla-example/actions/workflows/cmake.yml/badge.svg)](https://github.com/LegalizeAdulthood/scintilla-example/actions/workflows/cmake.yml)
 
-# Project Template
+# Syntax Enhanced Editing with Scintilla
 
-Sample code for the video Project Template.
+Sample code for the video Syntax Enhanced Editing with Scintilla.
 
 [Utah C++ Programmers](https://meetup.com/utah-cpp-programmers)\
 [Past Topics](https://utahcpp.wordpress.com/past-meeting-topics/)\
