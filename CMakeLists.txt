@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.23)
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+include(cxx_standard_17)
 include(target_folder)
+include(vs_startup_project)
 
 set(SCINTILLA_PROJECT_NAME "Scintilla Example" CACHE "STRING" "Default project name for IDEs")
 project("${SCINTILLA_PROJECT_NAME}" CXX)
@@ -19,3 +18,5 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT scintilla-example)
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
+
+vs_startup_project(scintilla-example)
