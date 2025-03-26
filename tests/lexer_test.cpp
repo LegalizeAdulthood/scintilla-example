@@ -1,6 +1,8 @@
+#include <lexer/lexer.h>
+
 #include <gtest/gtest.h>
 
-TEST(TestProjectTemplate, basic)
+TEST(TestLexer, basic)
 {
     ASSERT_TRUE(true);
 }
