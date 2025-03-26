@@ -2,7 +2,18 @@
 
 #include <gtest/gtest.h>
 
-TEST(TestLexer, basic)
+class TestLexer : public ::testing::Test
 {
-    ASSERT_TRUE(true);
+protected:
+    std::shared_ptr<ILexer> lexer{lexer::createLexer(), [](ILexer *lexer) { lexer->Release(); }};
+};
+
+TEST_F(TestLexer, create)
+{
+    ASSERT_TRUE(lexer);
+}
+
+TEST_F(TestLexer, version)
+{
+    ASSERT_EQ(dvOriginal, lexer->Version());
 }
