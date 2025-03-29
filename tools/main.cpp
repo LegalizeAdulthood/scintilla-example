@@ -1,5 +1,3 @@
-#include <lexer/lexer.h>
-
 #include <wx/wx.h>
 #include <wx/stc/stc.h>
 
@@ -18,7 +16,6 @@ private:
     void OnExit(wxCommandEvent& event);
 
     wxStyledTextCtrl *m_stc{};
-    ILexer *m_lexer{};
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -31,8 +28,7 @@ bool MyApp::OnInit()
 }
 
 MyFrame::MyFrame(const wxString &title) :
-    wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)),
-    m_lexer(lexer::create_lexer())
+    wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600))
 {
     wxMenuBar* menuBar = new wxMenuBar;
     wxMenu* fileMenu = new wxMenu;

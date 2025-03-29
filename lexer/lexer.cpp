@@ -1,11 +1,6 @@
-#include "ILexer.h"
-
-#include "lexer/lexer.h"
+#include <ILexer.h>
 
 #include <stdexcept>
-
-namespace lexer
-{
 
 namespace
 {
@@ -83,11 +78,31 @@ void *Lexer::PrivateCall(int operation, void *pointer)
     throw std::runtime_error("not implemented");
 }
 
-} // namespace
-
-ILexer *create_lexer()
+ILexer *factory()
 {
     return new Lexer;
 }
 
-} // namespace lexer
+using LexerFactoryFunction = ILexer *();
+
+} // namespace
+
+#if WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
+extern "C" EXPORT int GetLexerCount()
+{
+    return 1;
+}
+
+extern "C" EXPORT void GetLexerName(unsigned int index, char *name, int size)
+{
+}
+
+extern "C" EXPORT LexerFactoryFunction *GetLexerFactory(unsigned int index)
+{
+    return nullptr;
+}

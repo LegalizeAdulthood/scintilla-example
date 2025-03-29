@@ -1,7 +1,6 @@
-add_library(lexer
-    include/lexer/lexer.h
+add_library(formula-lexer SHARED
     lexer.cpp
 )
-target_include_directories(lexer PUBLIC include)
-target_link_libraries(lexer PUBLIC lexlib)
-target_folder(lexer "Libraries")
+target_include_directories(formula-lexer PRIVATE include)
+target_link_libraries(formula-lexer PRIVATE lexlib)
+target_folder(formula-lexer "Plug-Ins")
