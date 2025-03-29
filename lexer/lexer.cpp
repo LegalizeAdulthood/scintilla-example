@@ -1,5 +1,6 @@
 #include <ILexer.h>
 
+#include <cstring>
 #include <stdexcept>
 
 namespace
@@ -85,6 +86,12 @@ ILexer *factory()
 
 using LexerFactoryFunction = ILexer *();
 
+ILexer *create_lexer()
+{
+    return new Lexer;
+}
+
+
 } // namespace
 
 #if WIN32
@@ -100,9 +107,17 @@ extern "C" EXPORT int GetLexerCount()
 
 extern "C" EXPORT void GetLexerName(unsigned int index, char *name, int size)
 {
+    if (index == 0)
+    {
+        std::strncpy(name, "id-formula", size);
+    }
 }
 
 extern "C" EXPORT LexerFactoryFunction *GetLexerFactory(unsigned int index)
 {
+    if (index == 0)
+    {
+        return create_lexer;
+    }
     return nullptr;
 }
