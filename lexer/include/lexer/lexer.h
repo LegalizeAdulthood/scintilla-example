@@ -7,6 +7,6 @@
 namespace lexer
 {
 
-ILexer *createLexer();
+ILexer *create_lexer();
 
 }

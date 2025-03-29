@@ -85,7 +85,7 @@ void *Lexer::PrivateCall(int operation, void *pointer)
 
 } // namespace
 
-ILexer *createLexer()
+ILexer *create_lexer()
 {
     return new Lexer;
 }

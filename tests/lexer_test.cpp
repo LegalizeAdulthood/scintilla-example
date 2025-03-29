@@ -5,7 +5,7 @@
 class TestLexer : public ::testing::Test
 {
 protected:
-    std::shared_ptr<ILexer> lexer{lexer::createLexer(), [](ILexer *lexer) { lexer->Release(); }};
+    std::shared_ptr<ILexer> lexer{lexer::create_lexer(), [](ILexer *lexer) { lexer->Release(); }};
 };
 
 TEST_F(TestLexer, create)
