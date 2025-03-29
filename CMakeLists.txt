@@ -10,6 +10,7 @@ project("${SCINTILLA_PROJECT_NAME}" CXX)
 
 include(CTest)
 
+add_subdirectory(lexlib)
 add_subdirectory(lexer)
 add_subdirectory(tools)
 
