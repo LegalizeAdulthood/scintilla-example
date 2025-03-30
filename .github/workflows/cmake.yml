@@ -34,12 +34,4 @@ jobs:
         sudo apt-get install autoconf automake libtool pkg-config libltdl-dev libx11-dev libxft-dev libxext-dev libxi-dev libxtst-dev libxkbcommon-x11-0 libxrandr-dev linux-libc-dev
 
     - name: Run Workflow
-      if: ${{matrix.os != 'macos-latest'}}
       run: cmake --workflow --preset default
-
-    - name: Run Workflow
-      if: ${{matrix.os == 'macos-latest'}}
-      run: |
-        cmake --preset default
-        cmake --build --preset default
-        ls -lR ../build-scintilla-example-default
