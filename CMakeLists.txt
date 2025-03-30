@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.23)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 include(cxx_standard_17)
-include(target_copy_lexer_plugin)
 include(target_folder)
 include(target_prefix)
 include(vs_startup_project)

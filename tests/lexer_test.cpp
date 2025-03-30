@@ -137,10 +137,46 @@ void TestLexer::TearDown()
     TestPluginLoaded::TearDown();
 }
 
-
 TEST_F(TestLexer, version)
 {
     int version{m_lexer->Version()};
 
     EXPECT_EQ(lvOriginal, version);
+}
+
+TEST_F(TestLexer, noPropertyNames)
+{
+    EXPECT_STREQ("", m_lexer->PropertyNames());
+}
+
+TEST_F(TestLexer, noPropertyType)
+{
+    EXPECT_EQ(0, m_lexer->PropertyType(nullptr));
+}
+
+TEST_F(TestLexer, noPropertyDescription)
+{
+    EXPECT_STREQ("", m_lexer->DescribeProperty(nullptr));
+}
+
+static constexpr int NO_LEXING_REQUIRED{-1};
+
+TEST_F(TestLexer, propertySetRequiresNoLexing)
+{
+    EXPECT_EQ(NO_LEXING_REQUIRED, m_lexer->PropertySet(nullptr, nullptr));
+}
+
+TEST_F(TestLexer, noWordListSetsDescription)
+{
+    EXPECT_STREQ("", m_lexer->DescribeWordListSets());
+}
+
+TEST_F(TestLexer, wordListSetRequiresNoLexing)
+{
+    EXPECT_EQ(NO_LEXING_REQUIRED, m_lexer->WordListSet(0, nullptr));
+}
+
+TEST_F(TestLexer, privateCallReturnsNullPtr)
+{
+    EXPECT_EQ(nullptr, m_lexer->PrivateCall(0, nullptr));
 }

@@ -19,7 +19,7 @@ public:
     Sci_Position PropertySet(const char *key, const char *val) override;
     const char *DescribeWordListSets() override;
     Sci_Position WordListSet(int n, const char *wl) override;
-    void Lex(Sci_PositionU startPos, Sci_Position lengthDoc, int initStyle, IDocument *pAccess) override;
+    void Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc) override;
     void Fold(Sci_PositionU startPos, Sci_Position lengthDoc, int initStyle, IDocument *pAccess) override;
     void *PrivateCall(int operation, void *pointer) override;
 };
@@ -36,35 +36,35 @@ void Lexer::Release()
 
 const char *Lexer::PropertyNames()
 {
-    throw std::runtime_error("not implemented");
+    return "";
 }
 
-int Lexer::PropertyType(const char *name)
+int Lexer::PropertyType(const char */*name*/)
 {
-    throw std::runtime_error("not implemented");
+    return 0;
 }
 
-const char *Lexer::DescribeProperty(const char *name)
+const char *Lexer::DescribeProperty(const char */*name*/)
 {
-    throw std::runtime_error("not implemented");
+    return "";
 }
 
-Sci_Position Lexer::PropertySet(const char *key, const char *val)
+Sci_Position Lexer::PropertySet(const char */*key*/, const char */*val*/)
 {
-    throw std::runtime_error("not implemented");
+    return -1;
 }
 
 const char *Lexer::DescribeWordListSets()
 {
-    throw std::runtime_error("not implemented");
+    return "";
 }
 
-Sci_Position Lexer::WordListSet(int n, const char *wl)
+Sci_Position Lexer::WordListSet(int /*n*/, const char */*wl*/)
 {
-    throw std::runtime_error("not implemented");
+    return -1;
 }
 
-void Lexer::Lex(Sci_PositionU startPos, Sci_Position lengthDoc, int initStyle, IDocument *pAccess)
+void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)
 {
     throw std::runtime_error("not implemented");
 }
@@ -74,14 +74,9 @@ void Lexer::Fold(Sci_PositionU startPos, Sci_Position lengthDoc, int initStyle, 
     throw std::runtime_error("not implemented");
 }
 
-void *Lexer::PrivateCall(int operation, void *pointer)
+void *Lexer::PrivateCall(int /*operation*/, void */*pointer*/)
 {
-    throw std::runtime_error("not implemented");
-}
-
-ILexer *factory()
-{
-    return new Lexer;
+    return nullptr;
 }
 
 using LexerFactoryFunction = ILexer *();
