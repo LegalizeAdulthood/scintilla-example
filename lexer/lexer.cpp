@@ -100,12 +100,12 @@ ILexer *create_lexer()
 #define EXPORT
 #endif
 
-extern "C" EXPORT int GetLexerCount()
+extern "C" EXPORT int SCI_METHOD GetLexerCount()
 {
     return 1;
 }
 
-extern "C" EXPORT void GetLexerName(unsigned int index, char *name, int size)
+extern "C" EXPORT void SCI_METHOD GetLexerName(unsigned int index, char *name, int size)
 {
     if (index == 0)
     {
@@ -113,7 +113,7 @@ extern "C" EXPORT void GetLexerName(unsigned int index, char *name, int size)
     }
 }
 
-extern "C" EXPORT LexerFactoryFunction *GetLexerFactory(unsigned int index)
+extern "C" EXPORT LexerFactoryFunction *SCI_METHOD GetLexerFactory(unsigned int index)
 {
     if (index == 0)
     {
