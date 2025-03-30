@@ -8,20 +8,24 @@
 
 #include <sstream>
 
-class TestLexer : public ::testing::Test
+class TestPlugin : public ::testing::Test
 {
 protected:
+    void SetUp() override;
     wxFileName m_plugin_file{wxT("./formula-lexer") + wxDynamicLibrary::GetDllExt(wxDL_LIBRARY)};
-    std::shared_ptr<ILexer> lexer{};
+    std::ostringstream m_log;
+    wxLogStream m_logger{&m_log};
+    wxDynamicLibrary plugin;
 };
 
-TEST_F(TestLexer, pluginLoads)
+void TestPlugin::SetUp()
 {
-    std::ostringstream log;
-    wxLogStream logger(&log);
-    wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
+    wxLog::SetActiveTarget(&m_logger);
+    plugin.Load(m_plugin_file.GetFullPath());
+}
 
+TEST_F(TestPlugin, pluginLoads)
+{
     ASSERT_TRUE(plugin.IsLoaded()) << "full path: " << m_plugin_file.GetFullPath();
 }
 
@@ -36,14 +40,18 @@ struct GetExportedSymbol
     bool found{};
 };
 
-TEST_F(TestLexer, pluginExportsNecessaryFunctions)
+class TestPluginLoaded : public TestPlugin
 {
-    std::ostringstream log;
-    wxLogStream logger(&log);
-    wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
-    ASSERT_TRUE(plugin.IsLoaded());
+protected:
+    void SetUp() override
+    {
+        TestPlugin::SetUp();
+        ASSERT_TRUE(plugin.IsLoaded());
+    }
+};
 
+TEST_F(TestPluginLoaded, pluginExportsNecessaryFunctions)
+{
     GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
     GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
     GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
@@ -55,16 +63,11 @@ TEST_F(TestLexer, pluginExportsNecessaryFunctions)
     EXPECT_NE(nullptr, get_lexer_factory.function);
 }
 
-TEST_F(TestLexer, oneLexerExported)
+TEST_F(TestPluginLoaded, oneLexerExported)
 {
-    std::ostringstream log;
-    wxLogStream logger(&log);
-    wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
-    ASSERT_TRUE(plugin.IsLoaded());
     using GetLexerCountFn = int();
     GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
-    GetLexerCountFn *GetLexerCount{reinterpret_cast<GetLexerCountFn*>(get_lexer_count.function)};
+    GetLexerCountFn *GetLexerCount{reinterpret_cast<GetLexerCountFn *>(get_lexer_count.function)};
     ASSERT_NE(nullptr, GetLexerCount);
 
     const int count = GetLexerCount();
@@ -72,16 +75,11 @@ TEST_F(TestLexer, oneLexerExported)
     EXPECT_EQ(1, count);
 }
 
-TEST_F(TestLexer, lexerNameIsIdFormula)
+TEST_F(TestPluginLoaded, lexerNameIsIdFormula)
 {
-    std::ostringstream log;
-    wxLogStream logger(&log);
-    wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
-    ASSERT_TRUE(plugin.IsLoaded());
     GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
     using GetLexerNameFn = void(unsigned int index, char *buffer, int size);
-    GetLexerNameFn *GetLexerName = reinterpret_cast<GetLexerNameFn*>(get_lexer_name.function);
+    GetLexerNameFn *GetLexerName = reinterpret_cast<GetLexerNameFn *>(get_lexer_name.function);
     ASSERT_NE(nullptr, GetLexerName);
 
     char buffer[80]{};
@@ -90,13 +88,8 @@ TEST_F(TestLexer, lexerNameIsIdFormula)
     EXPECT_STREQ("id-formula", buffer);
 }
 
-TEST_F(TestLexer, factoryCreatesLexer)
+TEST_F(TestPluginLoaded, factoryCreatesLexer)
 {
-    std::ostringstream log;
-    wxLogStream logger(&log);
-    wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
-    ASSERT_TRUE(plugin.IsLoaded());
     GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
     using LexerFactoryFunction = ILexer *();
     using GetLexerFactoryFn = LexerFactoryFunction *(unsigned int index);
@@ -105,10 +98,49 @@ TEST_F(TestLexer, factoryCreatesLexer)
     LexerFactoryFunction *factory{GetLexerFactory(0)};
     ASSERT_NE(nullptr, factory);
 
-    char buffer[80]{};
     ILexer *lexer = factory();
 
     ASSERT_NE(nullptr, lexer);
 
     lexer->Release();
+}
+
+class TestLexer : public TestPluginLoaded
+{
+protected:
+    void SetUp() override;
+    void TearDown() override;
+
+    ILexer *m_lexer{};
+};
+
+void TestLexer::SetUp()
+{
+    TestPluginLoaded::SetUp();
+    GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
+    using LexerFactoryFunction = ILexer *();
+    using GetLexerFactoryFn = LexerFactoryFunction *(unsigned int index);
+    GetLexerFactoryFn *GetLexerFactory = reinterpret_cast<GetLexerFactoryFn *>(get_lexer_factory.function);
+    ASSERT_NE(nullptr, GetLexerFactory);
+    LexerFactoryFunction *factory{GetLexerFactory(0)};
+    ASSERT_NE(nullptr, factory);
+    m_lexer = factory();
+    ASSERT_NE(nullptr, m_lexer);
+}
+
+void TestLexer::TearDown()
+{
+    if (m_lexer != nullptr)
+    {
+        m_lexer->Release();
+    }
+    TestPluginLoaded::TearDown();
+}
+
+
+TEST_F(TestLexer, version)
+{
+    int version{m_lexer->Version()};
+
+    EXPECT_EQ(lvOriginal, version);
 }
