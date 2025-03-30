@@ -1,6 +1,9 @@
+#include "config.h"
+
 #include <ILexer.h>
 
 #include <wx/dynlib.h>
+#include <wx/filename.h>
 #include <wx/log.h>
 
 #include <gtest/gtest.h>
@@ -10,14 +13,25 @@
 class TestLexer : public ::testing::Test
 {
 protected:
+    void SetUp() override;
+
+    wxFileName m_plugin_file{wxT("formula-lexer") + wxDynamicLibrary::GetDllExt()};
     std::shared_ptr<ILexer> lexer{};
 };
 
+void TestLexer::SetUp()
+{
+    m_plugin_file.DirName(PLUGIN_DIR);
+}
+
 TEST_F(TestLexer, pluginLoads)
 {
-    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
+    std::ostringstream log;
+    wxLogStream logger(&log);
+    wxLog::SetActiveTarget(&logger);
+    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
 
-    ASSERT_TRUE(plugin.IsLoaded());
+    ASSERT_TRUE(plugin.IsLoaded()) << m_plugin_file.GetFullPath();
 }
 
 struct GetExportedSymbol
@@ -36,7 +50,8 @@ TEST_F(TestLexer, pluginExportsNecessaryFunctions)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
+    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
+    ASSERT_TRUE(plugin.IsLoaded());
 
     GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
     GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
@@ -54,7 +69,8 @@ TEST_F(TestLexer, oneLexerExported)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
+    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
+    ASSERT_TRUE(plugin.IsLoaded());
     using GetLexerCountFn = int();
     GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
     GetLexerCountFn *GetLexerCount{reinterpret_cast<GetLexerCountFn*>(get_lexer_count.function)};
@@ -70,7 +86,8 @@ TEST_F(TestLexer, lexerNameIsIdFormula)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
+    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
+    ASSERT_TRUE(plugin.IsLoaded());
     GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
     using GetLexerNameFn = void(unsigned int index, char *buffer, int size);
     GetLexerNameFn *GetLexerName = reinterpret_cast<GetLexerNameFn*>(get_lexer_name.function);
@@ -87,7 +104,8 @@ TEST_F(TestLexer, factoryCreatesLexer)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
+    wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
+    ASSERT_TRUE(plugin.IsLoaded());
     GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
     using LexerFactoryFunction = ILexer *();
     using GetLexerFactoryFn = LexerFactoryFunction *(unsigned int index);
