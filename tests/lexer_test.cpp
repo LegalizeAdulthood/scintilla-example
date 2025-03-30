@@ -4,11 +4,15 @@
 #include <wx/filename.h>
 #include <wx/log.h>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstring>
 #include <sstream>
 
-class TestPlugin : public ::testing::Test
+using namespace testing;
+
+class TestPlugin : public Test
 {
 protected:
     void SetUp() override;
@@ -179,4 +183,50 @@ TEST_F(TestLexer, wordListSetRequiresNoLexing)
 TEST_F(TestLexer, privateCallReturnsNullPtr)
 {
     EXPECT_EQ(nullptr, m_lexer->PrivateCall(0, nullptr));
+}
+
+class MockDocument : public StrictMock<IDocument>
+{
+public:
+    virtual ~MockDocument() = default;
+    MOCK_METHOD(int, Version, (), (const, override));
+    MOCK_METHOD(void, SetErrorStatus, (int), (override));
+    MOCK_METHOD(Sci_Position, Length, (), (const, override));
+    MOCK_METHOD(void, GetCharRange, (char *, Sci_Position, Sci_Position), (const, override));
+    MOCK_METHOD(char, StyleAt, (Sci_Position), (const, override));
+    MOCK_METHOD(Sci_Position, LineFromPosition, (Sci_Position), (const, override));
+    MOCK_METHOD(Sci_Position, LineStart, (Sci_Position), (const, override));
+    MOCK_METHOD(int, GetLevel, (Sci_Position), (const, override));
+    MOCK_METHOD(int, SetLevel, (Sci_Position, int), (override));
+    MOCK_METHOD(int, GetLineState, (Sci_Position), (const, override));
+    MOCK_METHOD(int, SetLineState, (Sci_Position, int), (override));
+    MOCK_METHOD(void, StartStyling, (Sci_Position, char), (override));
+    MOCK_METHOD(bool, SetStyleFor, (Sci_Position, char), (override));
+    MOCK_METHOD(bool, SetStyles, (Sci_Position, const char *), (override));
+    MOCK_METHOD(void, DecorationSetCurrentIndicator, (int), (override));
+    MOCK_METHOD(void, DecorationFillRange, (Sci_Position, int, Sci_Position), (override));
+    MOCK_METHOD(void, ChangeLexerState, (Sci_Position, Sci_Position), (override));
+    MOCK_METHOD(int, CodePage, (), (const, override));
+    MOCK_METHOD(bool, IsDBCSLeadByte, (char), (const, override));
+    MOCK_METHOD(const char *, BufferPointer, (), (override));
+    MOCK_METHOD(int, GetLineIndentation, (Sci_Position), (override));
+};
+
+TEST_F(TestLexer, lexComment)
+{
+    std::string_view text{";"};
+    MockDocument doc;
+    EXPECT_CALL(doc, CodePage()).WillRepeatedly(Return(0));
+    EXPECT_CALL(doc, Length()).WillRepeatedly(Return(static_cast<Sci_Position>(text.size())));
+    EXPECT_CALL(doc, Version()).WillRepeatedly(Return(dvOriginal));
+    EXPECT_CALL(doc, StartStyling(0, _)).Times(1);
+    EXPECT_CALL(doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(doc, LineFromPosition(1)).WillRepeatedly(Return(0));
+    EXPECT_CALL(doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(doc, LineStart(Ge(1))).WillRepeatedly(Return(static_cast<Sci_Position>(text.size())));
+    EXPECT_CALL(doc, GetCharRange(_, 0, 1))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, text.substr(start, len).data(), len); });
+
+    m_lexer->Lex(0, static_cast<Sci_Position>(text.size()), 0, &doc);
 }

@@ -1,5 +1,9 @@
 #include <ILexer.h>
 
+#include <assert.h>  // NOLINT(modernize-deprecated-headers); needed by LexAccessor.h
+#include <LexAccessor.h>
+#include <StyleContext.h>
+
 #include <cstring>
 #include <stdexcept>
 
@@ -64,9 +68,33 @@ Sci_Position Lexer::WordListSet(int /*n*/, const char */*wl*/)
     return -1;
 }
 
+enum
+{
+    FRM_DEFAULT = 0,
+    FRM_COMMENT = 1,
+};
+
 void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)
 {
-    throw std::runtime_error("not implemented");
+    LexAccessor accessor{doc};
+    StyleContext context{start, static_cast<Sci_PositionU>(len), init_style, accessor};
+    for (; context.More(); context.Forward())
+    {
+        if (context.state == FRM_DEFAULT)
+        {
+            if (context.Match(';'))
+            {
+                context.SetState(FRM_COMMENT);
+            }
+        }
+        else if (context.state == FRM_COMMENT)
+        {
+            if (context.Match('\n'))
+            {
+                context.SetState(FRM_DEFAULT);
+            }
+        }
+    }
 }
 
 void Lexer::Fold(Sci_PositionU startPos, Sci_Position lengthDoc, int initStyle, IDocument *pAccess)
