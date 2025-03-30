@@ -1,3 +1,0 @@
-#pragma once
-
-constexpr const char *PLUGIN_DIR{"$<TARGET_FILE_DIR:test-lexer>"};

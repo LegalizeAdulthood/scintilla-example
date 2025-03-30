@@ -1,5 +1,3 @@
-#include "config.h"
-
 #include <ILexer.h>
 
 #include <wx/dynlib.h>
@@ -13,16 +11,9 @@
 class TestLexer : public ::testing::Test
 {
 protected:
-    void SetUp() override;
-
     wxFileName m_plugin_file{wxT("./formula-lexer") + wxDynamicLibrary::GetDllExt(wxDL_LIBRARY)};
     std::shared_ptr<ILexer> lexer{};
 };
-
-void TestLexer::SetUp()
-{
-    m_plugin_file.DirName(PLUGIN_DIR);
-}
 
 TEST_F(TestLexer, pluginLoads)
 {
@@ -31,7 +22,7 @@ TEST_F(TestLexer, pluginLoads)
     wxLog::SetActiveTarget(&logger);
     wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
 
-    ASSERT_TRUE(plugin.IsLoaded()) << "PLUGIN_DIR: " << PLUGIN_DIR << ", full path: " << m_plugin_file.GetFullPath();
+    ASSERT_TRUE(plugin.IsLoaded()) << "full path: " << m_plugin_file.GetFullPath();
 }
 
 struct GetExportedSymbol
