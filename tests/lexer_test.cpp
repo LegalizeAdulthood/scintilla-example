@@ -15,7 +15,7 @@ protected:
 
 TEST_F(TestLexer, pluginLoads)
 {
-    wxDynamicLibrary plugin(wxT("formula-lexer"));
+    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
 
     ASSERT_TRUE(plugin.IsLoaded());
 }
@@ -36,7 +36,7 @@ TEST_F(TestLexer, pluginExportsNecessaryFunctions)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer"));
+    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
 
     GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
     GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
@@ -54,7 +54,7 @@ TEST_F(TestLexer, oneLexerExported)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer"));
+    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
     using GetLexerCountFn = int();
     GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
     GetLexerCountFn *GetLexerCount{reinterpret_cast<GetLexerCountFn*>(get_lexer_count.function)};
@@ -70,7 +70,7 @@ TEST_F(TestLexer, lexerNameIsIdFormula)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer"));
+    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
     GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
     using GetLexerNameFn = void(unsigned int index, char *buffer, int size);
     GetLexerNameFn *GetLexerName = reinterpret_cast<GetLexerNameFn*>(get_lexer_name.function);
@@ -87,7 +87,7 @@ TEST_F(TestLexer, factoryCreatesLexer)
     std::ostringstream log;
     wxLogStream logger(&log);
     wxLog::SetActiveTarget(&logger);
-    wxDynamicLibrary plugin(wxT("formula-lexer"));
+    wxDynamicLibrary plugin(wxT("formula-lexer") + wxDynamicLibrary::GetDllExt());
     GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
     using LexerFactoryFunction = ILexer *();
     using GetLexerFactoryFn = LexerFactoryFunction *(unsigned int index);
