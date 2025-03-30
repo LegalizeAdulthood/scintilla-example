@@ -31,7 +31,7 @@ TEST_F(TestLexer, pluginLoads)
     wxLog::SetActiveTarget(&logger);
     wxDynamicLibrary plugin(m_plugin_file.GetFullPath());
 
-    ASSERT_TRUE(plugin.IsLoaded()) << m_plugin_file.GetFullPath();
+    ASSERT_TRUE(plugin.IsLoaded()) << "PLUGIN_DIR: " << PLUGIN_DIR << ", full path: " << m_plugin_file.GetFullPath();
 }
 
 struct GetExportedSymbol
