@@ -4,3 +4,4 @@ add_library(formula-lexer SHARED
 target_include_directories(formula-lexer PRIVATE include)
 target_link_libraries(formula-lexer PRIVATE lexlib)
 target_folder(formula-lexer "Plug-Ins")
+target_prefix(formula-lexer "")
