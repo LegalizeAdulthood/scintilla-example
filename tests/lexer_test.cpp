@@ -15,7 +15,7 @@ class TestLexer : public ::testing::Test
 protected:
     void SetUp() override;
 
-    wxFileName m_plugin_file{wxT("formula-lexer") + wxDynamicLibrary::GetDllExt()};
+    wxFileName m_plugin_file{wxT("./formula-lexer") + wxDynamicLibrary::GetDllExt(wxDL_LIBRARY)};
     std::shared_ptr<ILexer> lexer{};
 };
 
