@@ -186,6 +186,11 @@ TEST_F(TestLexer, privateCallReturnsNullPtr)
     EXPECT_EQ(nullptr, m_lexer->PrivateCall(0, nullptr));
 }
 
+TEST_F(TestLexer, foldDoesNothing)
+{
+    m_lexer->Fold(0, 0, 0, nullptr);
+}
+
 class MockDocument : public StrictMock<IDocument>
 {
 public:

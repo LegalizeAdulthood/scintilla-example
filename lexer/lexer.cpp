@@ -24,7 +24,7 @@ public:
     const char *DescribeWordListSets() override;
     Sci_Position WordListSet(int n, const char *wl) override;
     void Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc) override;
-    void Fold(Sci_PositionU startPos, Sci_Position lengthDoc, int initStyle, IDocument *pAccess) override;
+    void Fold(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc) override;
     void *PrivateCall(int operation, void *pointer) override;
 };
 
@@ -95,11 +95,11 @@ void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument
             }
         }
     }
+    context.Complete();
 }
 
-void Lexer::Fold(Sci_PositionU startPos, Sci_Position lengthDoc, int initStyle, IDocument *pAccess)
+void Lexer::Fold(Sci_PositionU /*start*/, Sci_Position /*len*/, int /*init_style*/, IDocument */*doc*/)
 {
-    throw std::runtime_error("not implemented");
 }
 
 void *Lexer::PrivateCall(int /*operation*/, void */*pointer*/)
