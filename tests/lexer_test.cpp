@@ -9,6 +9,7 @@
 
 #include <cstring>
 #include <sstream>
+#include <string>
 
 using namespace testing;
 
@@ -19,18 +20,18 @@ protected:
     wxFileName m_plugin_file{wxT("./formula-lexer") + wxDynamicLibrary::GetDllExt(wxDL_LIBRARY)};
     std::ostringstream m_log;
     wxLogStream m_logger{&m_log};
-    wxDynamicLibrary plugin;
+    wxDynamicLibrary m_plugin;
 };
 
 void TestPlugin::SetUp()
 {
     wxLog::SetActiveTarget(&m_logger);
-    plugin.Load(m_plugin_file.GetFullPath());
+    m_plugin.Load(m_plugin_file.GetFullPath());
 }
 
 TEST_F(TestPlugin, pluginLoads)
 {
-    ASSERT_TRUE(plugin.IsLoaded()) << "full path: " << m_plugin_file.GetFullPath();
+    ASSERT_TRUE(m_plugin.IsLoaded()) << "full path: " << m_plugin_file.GetFullPath();
 }
 
 struct GetExportedSymbol
@@ -50,15 +51,15 @@ protected:
     void SetUp() override
     {
         TestPlugin::SetUp();
-        ASSERT_TRUE(plugin.IsLoaded());
+        ASSERT_TRUE(m_plugin.IsLoaded());
     }
 };
 
 TEST_F(TestPluginLoaded, pluginExportsNecessaryFunctions)
 {
-    GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
-    GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
-    GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
+    GetExportedSymbol get_lexer_count{m_plugin, wxT("GetLexerCount")};
+    GetExportedSymbol get_lexer_name{m_plugin, wxT("GetLexerName")};
+    GetExportedSymbol get_lexer_factory{m_plugin, wxT("GetLexerFactory")};
     EXPECT_TRUE(get_lexer_count.found);
     EXPECT_NE(nullptr, get_lexer_count.function);
     EXPECT_TRUE(get_lexer_name.found);
@@ -70,7 +71,7 @@ TEST_F(TestPluginLoaded, pluginExportsNecessaryFunctions)
 TEST_F(TestPluginLoaded, oneLexerExported)
 {
     using GetLexerCountFn = int();
-    GetExportedSymbol get_lexer_count{plugin, wxT("GetLexerCount")};
+    GetExportedSymbol get_lexer_count{m_plugin, wxT("GetLexerCount")};
     GetLexerCountFn *GetLexerCount{reinterpret_cast<GetLexerCountFn *>(get_lexer_count.function)};
     ASSERT_NE(nullptr, GetLexerCount);
 
@@ -81,7 +82,7 @@ TEST_F(TestPluginLoaded, oneLexerExported)
 
 TEST_F(TestPluginLoaded, lexerNameIsIdFormula)
 {
-    GetExportedSymbol get_lexer_name{plugin, wxT("GetLexerName")};
+    GetExportedSymbol get_lexer_name{m_plugin, wxT("GetLexerName")};
     using GetLexerNameFn = void(unsigned int index, char *buffer, int size);
     GetLexerNameFn *GetLexerName = reinterpret_cast<GetLexerNameFn *>(get_lexer_name.function);
     ASSERT_NE(nullptr, GetLexerName);
@@ -94,7 +95,7 @@ TEST_F(TestPluginLoaded, lexerNameIsIdFormula)
 
 TEST_F(TestPluginLoaded, factoryCreatesLexer)
 {
-    GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
+    GetExportedSymbol get_lexer_factory{m_plugin, wxT("GetLexerFactory")};
     using LexerFactoryFunction = ILexer *();
     using GetLexerFactoryFn = LexerFactoryFunction *(unsigned int index);
     GetLexerFactoryFn *GetLexerFactory = reinterpret_cast<GetLexerFactoryFn *>(get_lexer_factory.function);
@@ -121,7 +122,7 @@ protected:
 void TestLexer::SetUp()
 {
     TestPluginLoaded::SetUp();
-    GetExportedSymbol get_lexer_factory{plugin, wxT("GetLexerFactory")};
+    GetExportedSymbol get_lexer_factory{m_plugin, wxT("GetLexerFactory")};
     using LexerFactoryFunction = ILexer *();
     using GetLexerFactoryFn = LexerFactoryFunction *(unsigned int index);
     GetLexerFactoryFn *GetLexerFactory = reinterpret_cast<GetLexerFactoryFn *>(get_lexer_factory.function);
@@ -212,21 +213,33 @@ public:
     MOCK_METHOD(int, GetLineIndentation, (Sci_Position), (override));
 };
 
-TEST_F(TestLexer, lexComment)
+class TestLexText : public TestLexer
 {
-    std::string_view text{";"};
-    MockDocument doc;
-    EXPECT_CALL(doc, CodePage()).WillRepeatedly(Return(0));
-    EXPECT_CALL(doc, Length()).WillRepeatedly(Return(static_cast<Sci_Position>(text.size())));
-    EXPECT_CALL(doc, Version()).WillRepeatedly(Return(dvOriginal));
-    EXPECT_CALL(doc, StartStyling(0, _)).Times(1);
-    EXPECT_CALL(doc, LineFromPosition(0)).WillRepeatedly(Return(0));
-    EXPECT_CALL(doc, LineFromPosition(1)).WillRepeatedly(Return(0));
-    EXPECT_CALL(doc, LineStart(0)).WillRepeatedly(Return(0));
-    EXPECT_CALL(doc, LineStart(Ge(1))).WillRepeatedly(Return(static_cast<Sci_Position>(text.size())));
-    EXPECT_CALL(doc, GetCharRange(_, 0, 1))
-        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
-            { std::strncpy(dest, text.substr(start, len).data(), len); });
+protected:
+    void SetUp() override;
+    std::string m_text;
+    MockDocument m_doc;
+};
 
-    m_lexer->Lex(0, static_cast<Sci_Position>(text.size()), 0, &doc);
+void TestLexText::SetUp()
+{
+    TestLexer::SetUp();
+    EXPECT_CALL(m_doc, CodePage()).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, Version()).WillRepeatedly(Return(dvOriginal));
+    EXPECT_CALL(m_doc, StartStyling(0, _)).Times(1);
+}
+
+TEST_F(TestLexText, lexSemiColon)
+{
+    m_text = ";";
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(static_cast<Sci_Position>(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineFromPosition(1)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(static_cast<Sci_Position>(m_text.size())));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, 1))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+
+    m_lexer->Lex(0, static_cast<Sci_Position>(m_text.size()), 0, &m_doc);
 }
