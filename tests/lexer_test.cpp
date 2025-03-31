@@ -245,6 +245,7 @@ TEST_F(TestLexText, lexSemiColon)
     EXPECT_CALL(m_doc, GetCharRange(_, 0, 1))
         .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
             { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, SetStyles(1, _)).WillOnce(Return(true));
 
     m_lexer->Lex(0, static_cast<Sci_Position>(m_text.size()), 0, &m_doc);
 }
