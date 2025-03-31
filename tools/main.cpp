@@ -1,5 +1,6 @@
-#include <wx/wx.h>
+#include <wx/dynlib.h>
 #include <wx/stc/stc.h>
+#include <wx/wx.h>
 
 class MyApp : public wxApp
 {
@@ -13,7 +14,8 @@ public:
     MyFrame(const wxString& title);
 
 private:
-    void OnExit(wxCommandEvent& event);
+    void load_language_theme();
+    void on_exit(wxCommandEvent& event);
 
     wxStyledTextCtrl *m_stc{};
 };
@@ -22,7 +24,7 @@ wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {
-    MyFrame* frame = new MyFrame("Scintilla Editing Example");
+    MyFrame *frame = new MyFrame("Scintilla Editing Example");
     frame->Show(true);
     return true;
 }
@@ -35,13 +37,29 @@ MyFrame::MyFrame(const wxString &title) :
     fileMenu->Append(wxID_EXIT, "&Quit\tAlt-F4", "Quit");
     menuBar->Append(fileMenu, "&File");
     wxFrameBase::SetMenuBar(menuBar);
-    Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
+    Bind(wxEVT_MENU, &MyFrame::on_exit, this, wxID_EXIT);
 
     m_stc = new wxStyledTextCtrl(this, wxID_ANY);
-    m_stc->SetText("Hello, wxStyledTextCtrl!");
+    m_stc->LoadLexerLibrary(wxT("./formula-lexer") + wxDynamicLibrary::GetDllExt(wxDL_LIBRARY));
+    m_stc->SetLexerLanguage(wxT("id-formula"));
+    load_language_theme();
+    m_stc->Colourise(0, -1);
 }
 
-void MyFrame::OnExit(wxCommandEvent &event)
+void MyFrame::load_language_theme()
+{
+    wxFont typewriter;
+    typewriter.SetFamily(wxFONTFAMILY_TELETYPE);
+    typewriter.SetPointSize(12);
+    typewriter.SetFaceName("consolas");
+    m_stc->StyleSetFont(0, typewriter);
+    m_stc->StyleSetFont(1, typewriter);
+    wxColour purple;
+    wxFromString("purple", &purple);
+    m_stc->StyleSetForeground(1, purple);
+}
+
+void MyFrame::on_exit(wxCommandEvent &/*event*/)
 {
     Close(true);
 }
