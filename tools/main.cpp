@@ -1,3 +1,5 @@
+#include <formula/Syntax.h>
+
 #include <wx/dynlib.h>
 #include <wx/stc/stc.h>
 #include <wx/wx.h>
@@ -52,11 +54,11 @@ void MyFrame::load_language_theme()
     typewriter.SetFamily(wxFONTFAMILY_TELETYPE);
     typewriter.SetPointSize(12);
     typewriter.SetFaceName("consolas");
-    m_stc->StyleSetFont(0, typewriter);
-    m_stc->StyleSetFont(1, typewriter);
+    m_stc->StyleSetFont(+formula::Syntax::DEFAULT, typewriter);
+    m_stc->StyleSetFont(+formula::Syntax::COMMENT, typewriter);
     wxColour purple;
     wxFromString("purple", &purple);
-    m_stc->StyleSetForeground(1, purple);
+    m_stc->StyleSetForeground(+formula::Syntax::COMMENT, purple);
 }
 
 void MyFrame::on_exit(wxCommandEvent &/*event*/)

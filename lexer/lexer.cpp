@@ -1,3 +1,5 @@
+#include <formula/syntax.h>
+
 #include <ILexer.h>
 
 #include <assert.h>  // NOLINT(modernize-deprecated-headers); needed by LexAccessor.h
@@ -68,30 +70,24 @@ Sci_Position Lexer::WordListSet(int /*n*/, const char */*wl*/)
     return -1;
 }
 
-enum
-{
-    FRM_DEFAULT = 0,
-    FRM_COMMENT = 1,
-};
-
 void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)
 {
     LexAccessor accessor{doc};
     StyleContext context{start, static_cast<Sci_PositionU>(len), init_style, accessor};
     for (; context.More(); context.Forward())
     {
-        if (context.state == FRM_DEFAULT)
+        if (context.state == +formula::Syntax::DEFAULT)
         {
             if (context.Match(';'))
             {
-                context.SetState(FRM_COMMENT);
+                context.SetState(+formula::Syntax::COMMENT);
             }
         }
-        else if (context.state == FRM_COMMENT)
+        else if (context.state == +formula::Syntax::COMMENT)
         {
             if (context.Match('\n'))
             {
-                context.SetState(FRM_DEFAULT);
+                context.SetState(+formula::Syntax::DEFAULT);
             }
         }
     }
