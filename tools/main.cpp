@@ -53,10 +53,10 @@ void MyFrame::load_language_theme()
     wxFont typewriter;
     typewriter.SetFamily(wxFONTFAMILY_TELETYPE);
     typewriter.SetPointSize(12);
-    typewriter.SetFaceName("consolas");
     m_stc->StyleSetFont(+formula::Syntax::NONE, typewriter);
     m_stc->StyleSetFont(+formula::Syntax::COMMENT, typewriter);
     m_stc->StyleSetFont(+formula::Syntax::KEYWORD, typewriter);
+    m_stc->StyleSetFont(+formula::Syntax::WHITESPACE, typewriter);
     wxColour purple;
     wxFromString("purple", &purple);
     m_stc->StyleSetForeground(+formula::Syntax::COMMENT, purple);

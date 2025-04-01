@@ -34,12 +34,9 @@ public:
     void *SCI_METHOD PrivateCall(int operation, void *pointer) override;
 
 private:
-    void none(StyleContext &sc);
-    void comment(StyleContext &sc);
-    void keyword(StyleContext &sc);
-
     WordList m_keywords;
-    CharacterSet m_keyword_char_set{CharacterSet::setAlpha};
+    CharacterSet m_keyword_charset{CharacterSet::setAlpha};
+    CharacterSet m_whitespace_charset{CharacterSet::setNone, " \t\v\f"};
 };
 
 Lexer::Lexer()
@@ -87,43 +84,13 @@ Sci_Position Lexer::WordListSet(int /*n*/, const char * /*wl*/)
     return -1;
 }
 
-void Lexer::none(StyleContext &sc)
+void Lexer::Fold(Sci_PositionU /*start*/, Sci_Position /*len*/, int /*init_style*/, IDocument */*doc*/)
 {
-    if (sc.Match(';'))
-    {
-        sc.SetState(+formula::Syntax::COMMENT);
-    }
-    else if (m_keyword_char_set.Contains(sc.ch))
-    {
-        sc.SetState(+formula::Syntax::KEYWORD);
-    }
-    sc.Forward();
 }
 
-void Lexer::comment(StyleContext &sc)
+void *Lexer::PrivateCall(int /*operation*/, void */*pointer*/)
 {
-    if (sc.Match('\n'))
-    {
-        sc.Forward(); // consume '\n' as part of the comment
-        sc.SetState(+formula::Syntax::NONE);
-    }
-    else
-    {
-        sc.Forward();
-    }
-}
-
-void Lexer::keyword(StyleContext &sc)
-{
-    if (sc.Match(';'))
-    {
-        sc.SetState(+formula::Syntax::COMMENT);
-    }
-    else if (!m_keyword_char_set.Contains(sc.ch))
-    {
-        sc.SetState(+formula::Syntax::NONE);
-    }
-    sc.Forward();
+    return nullptr;
 }
 
 void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)
@@ -147,12 +114,21 @@ void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument
                 advance = false;
             }
             break;
+
         case +formula::Syntax::KEYWORD:
-            if (sc.ch == ';' || !m_keyword_char_set.Contains(sc.ch))
+            if (sc.ch == ';' || !m_keyword_charset.Contains(sc.ch))
             {
                 sc.SetState(+formula::Syntax::NONE);
             }
             break;
+
+        case +formula::Syntax::WHITESPACE:
+            if (!m_whitespace_charset.Contains(sc.ch))
+            {
+                sc.SetState(+formula::Syntax::NONE);
+            }
+            break;
+
         default:
             break;
         }
@@ -163,9 +139,20 @@ void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument
             {
                 sc.SetState(+formula::Syntax::COMMENT);
             }
-            else if (m_keyword_char_set.Contains(sc.ch))
+            else if (m_whitespace_charset.Contains(sc.ch))
             {
-                sc.SetState(+formula::Syntax::KEYWORD);
+                sc.SetState(+formula::Syntax::WHITESPACE);
+            }
+            else if (m_keyword_charset.Contains(sc.ch))
+            {
+                char buffer[80];
+                sc.GetCurrent(buffer, sizeof(buffer));
+                std::string current{buffer};
+                current += static_cast<char>(sc.ch);
+                if (m_keywords.InList(current.c_str()))
+                {
+                    sc.ChangeState(+formula::Syntax::KEYWORD);
+                }
             }
         }
 
@@ -173,31 +160,8 @@ void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument
         {
             sc.Forward();
         }
-        continue;
-
-        if (sc.state == +formula::Syntax::NONE)
-        {
-            none(sc);
-        }
-        else if (sc.state == +formula::Syntax::COMMENT)
-        {
-            comment(sc);
-        }
-        else if (sc.state == +formula::Syntax::KEYWORD)
-        {
-            keyword(sc);
-        }
     }
     sc.Complete();
-}
-
-void Lexer::Fold(Sci_PositionU /*start*/, Sci_Position /*len*/, int /*init_style*/, IDocument */*doc*/)
-{
-}
-
-void *Lexer::PrivateCall(int /*operation*/, void */*pointer*/)
-{
-    return nullptr;
 }
 
 using LexerFactoryFunction = ILexer *();

@@ -8,6 +8,7 @@ enum class Syntax : int
     NONE = 0,
     COMMENT = 1,
     KEYWORD = 2,
+    WHITESPACE = 3,
 };
 
 constexpr int operator+(Syntax value)

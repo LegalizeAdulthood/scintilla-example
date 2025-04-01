@@ -396,3 +396,27 @@ TEST_F(TestLexText, lexCommentKeyword)
 
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
 }
+
+TEST_F(TestLexText, lexOtherTextKeyword)
+{
+    const std::string other{"whiff"};
+    const std::string whitespace{" \t\v\f"};
+    const std::string keyword{"if"};
+    m_text = other + whitespace + keyword;
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineFromPosition(11)).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    std::vector<char> styles;
+    std::fill_n(std::back_inserter(styles), other.size(), static_cast<char>(+formula::Syntax::NONE));
+    std::fill_n(std::back_inserter(styles), whitespace.size(), static_cast<char>(+formula::Syntax::WHITESPACE));
+    std::fill_n(std::back_inserter(styles), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(styles)))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
