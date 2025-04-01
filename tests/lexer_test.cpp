@@ -357,9 +357,13 @@ TEST_F(TestLexText, lexMultipleCommentLines)
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
 }
 
-TEST_F(TestLexText, lexIfKeyword)
+class LexKeyword : public TestLexText, public WithParamInterface<std::string>
 {
-    m_text = "if";
+};
+
+TEST_P(LexKeyword, lex)
+{
+    m_text = GetParam();
     EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
     EXPECT_CALL(m_doc, LineFromPosition(_)).WillRepeatedly(Return(0));
     EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
@@ -372,6 +376,8 @@ TEST_F(TestLexText, lexIfKeyword)
 
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
 }
+
+INSTANTIATE_TEST_SUITE_P(TestKeyword, LexKeyword, Values("if", "endif"));
 
 TEST_F(TestLexText, lexCommentKeyword)
 {

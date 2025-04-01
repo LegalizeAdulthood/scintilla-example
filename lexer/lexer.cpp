@@ -41,7 +41,7 @@ private:
 
 Lexer::Lexer()
 {
-    m_keywords.Set("if");
+    m_keywords.Set("if endif");
 }
 
 int Lexer::Version() const
