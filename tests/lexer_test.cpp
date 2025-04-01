@@ -377,7 +377,7 @@ TEST_P(LexKeyword, lex)
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestKeyword, LexKeyword, Values("if", "endif"));
+INSTANTIATE_TEST_SUITE_P(TestKeyword, LexKeyword, Values("if", "endif", "elseif", "else"));
 
 TEST_F(TestLexText, lexCommentKeyword)
 {
