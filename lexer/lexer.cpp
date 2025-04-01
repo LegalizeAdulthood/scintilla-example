@@ -3,6 +3,7 @@
 #include <ILexer.h>
 
 #include <assert.h>  // NOLINT(modernize-deprecated-headers); needed by LexAccessor.h
+#include <stddef.h>  // NOLINT(modernize-deprecated-headers); needed by CharacterSet.h
 
 #include <CharacterSet.h>
 #include <LexAccessor.h>
