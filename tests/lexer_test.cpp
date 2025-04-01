@@ -54,11 +54,17 @@ MATCHER_P2(has_repeated_style_bytes, style_, size_, "")
     return result;
 }
 
-MATCHER_P(has_style_bytes, expected, "")
+MATCHER_P2(has_style_bytes, size, expected, "")
 {
     if (arg == nullptr)
     {
         *result_listener << "got nullptr for style bytes";
+        return false;
+    }
+
+    if (size != expected.size())
+    {
+        *result_listener << "expected " << size << " bytes, given " << expected.size() << " bytes";
         return false;
     }
 
@@ -351,7 +357,7 @@ TEST_F(TestLexText, lexMultipleCommentLines)
     EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
         .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
             { std::strncpy(dest, m_text.substr(start, len).data(), len); });
-    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(expected_styles)))
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), expected_styles)))
         .WillOnce(Return(true));
 
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
@@ -379,6 +385,31 @@ TEST_P(LexKeyword, lex)
 
 INSTANTIATE_TEST_SUITE_P(TestKeyword, LexKeyword, Values("if", "endif", "elseif", "else"));
 
+class LexFunction : public TestLexText, public WithParamInterface<std::string>
+{
+};
+
+TEST_P(LexFunction, lex)
+{
+    m_text = GetParam();
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(_)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::FUNCTION, m_text.size())))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+INSTANTIATE_TEST_SUITE_P(TestFunction, LexFunction,
+    Values("sin", "cos", "sinh", "cosh", "cosxx", "tan", "cotan", "tanh", "cotanh", "sqr", "log", "exp", "abs", "conj",
+        "real", "imag", "flip", "fn1", "fn2", "fn3", "fn4", "srand", "asin", "asinh", "acos", "acosh", "atan", "atanh",
+        "sqrt", "cabs", "floor", "ceil", "trunc", "round"));
+
 TEST_F(TestLexText, lexCommentKeyword)
 {
     const std::string comment{"; comment\n"};
@@ -394,10 +425,9 @@ TEST_F(TestLexText, lexCommentKeyword)
         .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
             { std::strncpy(dest, m_text.substr(start, len).data(), len); });
     std::vector<char> styles;
-    styles.resize(m_text.size());
-    std::fill_n(styles.begin(), comment.size(), static_cast<char>(+formula::Syntax::COMMENT));
-    std::fill_n(styles.begin() + comment.size(), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
-    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(styles)))
+    std::fill_n(std::back_inserter(styles), comment.size(), static_cast<char>(+formula::Syntax::COMMENT));
+    std::fill_n(std::back_inserter(styles), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
         .WillOnce(Return(true));
 
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
@@ -421,7 +451,34 @@ TEST_F(TestLexText, lexOtherTextKeyword)
     std::fill_n(std::back_inserter(styles), other.size(), static_cast<char>(+formula::Syntax::NONE));
     std::fill_n(std::back_inserter(styles), whitespace.size(), static_cast<char>(+formula::Syntax::WHITESPACE));
     std::fill_n(std::back_inserter(styles), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
-    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(styles)))
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+TEST_F(TestLexText, lexKeywordFunction)
+{
+    const std::string keyword{"if"};
+    const std::string whitespace{" "};
+    const std::string function{"sin"};
+    const std::string other{"(z)"};
+    m_text = keyword + whitespace + function + whitespace + other;
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    std::vector<char> styles;
+    std::fill_n(std::back_inserter(styles), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
+    std::fill_n(std::back_inserter(styles), whitespace.size(), static_cast<char>(+formula::Syntax::WHITESPACE));
+    std::fill_n(std::back_inserter(styles), function.size(), static_cast<char>(+formula::Syntax::FUNCTION));
+    std::fill_n(std::back_inserter(styles), whitespace.size(), static_cast<char>(+formula::Syntax::WHITESPACE));
+    std::fill_n(std::back_inserter(styles), other.size(), static_cast<char>(+formula::Syntax::NONE));
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
         .WillOnce(Return(true));
 
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);

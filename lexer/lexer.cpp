@@ -35,14 +35,22 @@ public:
     void *SCI_METHOD PrivateCall(int operation, void *pointer) override;
 
 private:
+    bool finish_state(StyleContext &sc);
+    void begin_state(StyleContext &sc);
+
     WordList m_keywords;
+    WordList m_functions;
     CharacterSet m_keyword_charset{CharacterSet::setAlpha};
+    CharacterSet m_function_charset{CharacterSet::setAlphaNum};
     CharacterSet m_whitespace_charset{CharacterSet::setNone, " \t\v\f"};
 };
 
 Lexer::Lexer()
 {
     m_keywords.Set("if endif elseif else");
+    m_functions.Set("sin cos sinh cosh cosxx tan cotan tanh cotanh sqr log exp "
+                    "abs conj real imag flip fn1 fn2 fn3 fn4 srand asin asinh "
+                    "acos acosh atan atanh sqrt cabs floor ceil trunc round");
 }
 
 int Lexer::Version() const
@@ -94,68 +102,103 @@ void *Lexer::PrivateCall(int /*operation*/, void */*pointer*/)
     return nullptr;
 }
 
+bool Lexer::finish_state(StyleContext &sc)
+{
+    switch (sc.state)
+    {
+    case +formula::Syntax::COMMENT:
+        if (sc.atLineStart)
+        {
+            sc.SetState(+formula::Syntax::NONE);
+        }
+        else if (sc.ch == '\n')
+        {
+            sc.Forward();
+            sc.SetState(+formula::Syntax::NONE);
+            return false;
+        }
+        break;
+
+    case +formula::Syntax::KEYWORD:
+        if (sc.ch == ';' || !m_keyword_charset.Contains(sc.ch))
+        {
+            sc.SetState(+formula::Syntax::NONE);
+        }
+        break;
+
+    case +formula::Syntax::WHITESPACE:
+        if (!m_whitespace_charset.Contains(sc.ch))
+        {
+            sc.SetState(+formula::Syntax::NONE);
+        }
+        break;
+
+    case +formula::Syntax::FUNCTION:
+        if (sc.ch == ';' || !m_function_charset.Contains(sc.ch))
+        {
+            sc.SetState(+formula::Syntax::NONE);
+        }
+        break;
+
+    default:
+        break;
+    }
+    return true;
+}
+
+void Lexer::begin_state(StyleContext &sc)
+{
+    if (sc.state != +formula::Syntax::NONE)
+    {
+        return;
+    }
+
+    if (sc.ch == ';')
+    {
+        sc.SetState(+formula::Syntax::COMMENT);
+        return;
+    }
+
+    if (m_whitespace_charset.Contains(sc.ch))
+    {
+        sc.SetState(+formula::Syntax::WHITESPACE);
+        return;
+    }
+
+    if (m_keyword_charset.Contains(sc.ch))
+    {
+        char buffer[80];
+        sc.GetCurrent(buffer, sizeof(buffer));
+        std::string current{buffer};
+        current += static_cast<char>(sc.ch);
+        if (m_keywords.InList(current.c_str()))
+        {
+            sc.ChangeState(+formula::Syntax::KEYWORD);
+            return;
+        }
+    }
+
+    if (m_function_charset.Contains(sc.ch))
+    {
+        char buffer[80];
+        sc.GetCurrent(buffer, sizeof(buffer));
+        std::string current{buffer};
+        current += static_cast<char>(sc.ch);
+        if (m_functions.InList(current.c_str()))
+        {
+            sc.ChangeState(+formula::Syntax::FUNCTION);
+            return;
+        }
+    }
+}
 void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)
 {
     LexAccessor accessor{doc};
     StyleContext sc{start, static_cast<Sci_PositionU>(len), init_style, accessor};
     while (sc.More())
     {
-        bool advance{true};
-        switch (sc.state)
-        {
-        case +formula::Syntax::COMMENT:
-            if (sc.atLineStart)
-            {
-                sc.SetState(+formula::Syntax::NONE);
-            }
-            else if (sc.ch == '\n')
-            {
-                sc.Forward();
-                sc.SetState(+formula::Syntax::NONE);
-                advance = false;
-            }
-            break;
-
-        case +formula::Syntax::KEYWORD:
-            if (sc.ch == ';' || !m_keyword_charset.Contains(sc.ch))
-            {
-                sc.SetState(+formula::Syntax::NONE);
-            }
-            break;
-
-        case +formula::Syntax::WHITESPACE:
-            if (!m_whitespace_charset.Contains(sc.ch))
-            {
-                sc.SetState(+formula::Syntax::NONE);
-            }
-            break;
-
-        default:
-            break;
-        }
-
-        if (sc.state == +formula::Syntax::NONE)
-        {
-            if (sc.ch == ';')
-            {
-                sc.SetState(+formula::Syntax::COMMENT);
-            }
-            else if (m_whitespace_charset.Contains(sc.ch))
-            {
-                sc.SetState(+formula::Syntax::WHITESPACE);
-            }
-            else if (m_keyword_charset.Contains(sc.ch))
-            {
-                char buffer[80];
-                sc.GetCurrent(buffer, sizeof(buffer));
-                std::string current{buffer};
-                current += static_cast<char>(sc.ch);
-                if (m_keywords.InList(current.c_str()))
-                {
-                    sc.ChangeState(+formula::Syntax::KEYWORD);
-                }
-            }
-        }
+        const bool advance{finish_state(sc)};
+        begin_state(sc);
 
         if (advance)
         {
