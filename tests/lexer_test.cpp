@@ -1,4 +1,4 @@
-#include <formula/Syntax.h>
+#include <formula/syntax.h>
 
 #include <ILexer.h>
 
