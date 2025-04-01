@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 namespace
 {
