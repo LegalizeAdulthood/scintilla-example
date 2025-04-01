@@ -34,4 +34,6 @@ jobs:
         sudo apt-get install autoconf automake libtool pkg-config libltdl-dev libx11-dev libxft-dev libxext-dev libxi-dev libxtst-dev libxkbcommon-x11-0 libxrandr-dev linux-libc-dev make
 
     - name: Run Workflow
-      run: cmake --workflow --preset default
+      run: |
+        cmake --version
+        cmake --workflow --preset default
