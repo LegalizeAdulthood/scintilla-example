@@ -3,8 +3,11 @@
 #include <ILexer.h>
 
 #include <assert.h>  // NOLINT(modernize-deprecated-headers); needed by LexAccessor.h
+
+#include <CharacterSet.h>
 #include <LexAccessor.h>
 #include <StyleContext.h>
+#include <WordList.h>
 
 #include <cstring>
 #include <stdexcept>
@@ -15,20 +18,34 @@ namespace
 class Lexer : public ILexer
 {
 public:
+    Lexer();
     virtual ~Lexer() = default;
 
-    int Version() const override;
-    void Release() override;
-    const char *PropertyNames() override;
-    int PropertyType(const char *name) override;
-    const char *DescribeProperty(const char *name) override;
-    Sci_Position PropertySet(const char *key, const char *val) override;
-    const char *DescribeWordListSets() override;
-    Sci_Position WordListSet(int n, const char *wl) override;
-    void Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc) override;
-    void Fold(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc) override;
-    void *PrivateCall(int operation, void *pointer) override;
+    int SCI_METHOD Version() const override;
+    void SCI_METHOD Release() override;
+    const char *SCI_METHOD PropertyNames() override;
+    int SCI_METHOD PropertyType(const char *name) override;
+    const char *SCI_METHOD DescribeProperty(const char *name) override;
+    Sci_Position SCI_METHOD PropertySet(const char *key, const char *val) override;
+    const char *SCI_METHOD DescribeWordListSets() override;
+    Sci_Position SCI_METHOD WordListSet(int n, const char *wl) override;
+    void SCI_METHOD Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc) override;
+    void SCI_METHOD Fold(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc) override;
+    void *SCI_METHOD PrivateCall(int operation, void *pointer) override;
+
+private:
+    void none(StyleContext &sc);
+    void comment(StyleContext &sc);
+    void keyword(StyleContext &sc);
+
+    WordList m_keywords;
+    CharacterSet m_keyword_char_set{CharacterSet::setAlpha};
 };
+
+Lexer::Lexer()
+{
+    m_keywords.Set("if");
+}
 
 int Lexer::Version() const
 {
@@ -65,33 +82,113 @@ const char *Lexer::DescribeWordListSets()
     return "";
 }
 
-Sci_Position Lexer::WordListSet(int /*n*/, const char */*wl*/)
+Sci_Position Lexer::WordListSet(int /*n*/, const char * /*wl*/)
 {
     return -1;
+}
+
+void Lexer::none(StyleContext &sc)
+{
+    if (sc.Match(';'))
+    {
+        sc.SetState(+formula::Syntax::COMMENT);
+    }
+    else if (m_keyword_char_set.Contains(sc.ch))
+    {
+        sc.SetState(+formula::Syntax::KEYWORD);
+    }
+    sc.Forward();
+}
+
+void Lexer::comment(StyleContext &sc)
+{
+    if (sc.Match('\n'))
+    {
+        sc.Forward(); // consume '\n' as part of the comment
+        sc.SetState(+formula::Syntax::NONE);
+    }
+    else
+    {
+        sc.Forward();
+    }
+}
+
+void Lexer::keyword(StyleContext &sc)
+{
+    if (sc.Match(';'))
+    {
+        sc.SetState(+formula::Syntax::COMMENT);
+    }
+    else if (!m_keyword_char_set.Contains(sc.ch))
+    {
+        sc.SetState(+formula::Syntax::NONE);
+    }
+    sc.Forward();
 }
 
 void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)
 {
     LexAccessor accessor{doc};
-    StyleContext context{start, static_cast<Sci_PositionU>(len), init_style, accessor};
-    for (; context.More(); context.Forward())
+    StyleContext sc{start, static_cast<Sci_PositionU>(len), init_style, accessor};
+    while (sc.More())
     {
-        if (context.state == +formula::Syntax::DEFAULT)
+        bool advance{true};
+        switch (sc.state)
         {
-            if (context.Match(';'))
+        case +formula::Syntax::COMMENT:
+            if (sc.atLineStart)
             {
-                context.SetState(+formula::Syntax::COMMENT);
+                sc.SetState(+formula::Syntax::NONE);
+            }
+            else if (sc.ch == '\n')
+            {
+                sc.Forward();
+                sc.SetState(+formula::Syntax::NONE);
+                advance = false;
+            }
+            break;
+        case +formula::Syntax::KEYWORD:
+            if (sc.ch == ';' || !m_keyword_char_set.Contains(sc.ch))
+            {
+                sc.SetState(+formula::Syntax::NONE);
+            }
+            break;
+        default:
+            break;
+        }
+
+        if (sc.state == +formula::Syntax::NONE)
+        {
+            if (sc.ch == ';')
+            {
+                sc.SetState(+formula::Syntax::COMMENT);
+            }
+            else if (m_keyword_char_set.Contains(sc.ch))
+            {
+                sc.SetState(+formula::Syntax::KEYWORD);
             }
         }
-        else if (context.state == +formula::Syntax::COMMENT)
+
+        if (advance)
         {
-            if (context.Match('\n'))
-            {
-                context.SetState(+formula::Syntax::DEFAULT);
-            }
+            sc.Forward();
+        }
+        continue;
+
+        if (sc.state == +formula::Syntax::NONE)
+        {
+            none(sc);
+        }
+        else if (sc.state == +formula::Syntax::COMMENT)
+        {
+            comment(sc);
+        }
+        else if (sc.state == +formula::Syntax::KEYWORD)
+        {
+            keyword(sc);
         }
     }
-    context.Complete();
+    sc.Complete();
 }
 
 void Lexer::Fold(Sci_PositionU /*start*/, Sci_Position /*len*/, int /*init_style*/, IDocument */*doc*/)

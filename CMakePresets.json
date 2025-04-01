@@ -13,6 +13,14 @@
       "binaryDir": "${sourceDir}/../build-${sourceDirName}-${presetName}"
     },
     {
+      "name": "build-example-lexers",
+      "hidden": true,
+      "description": "Build example Scintilla lexers",
+      "cacheVariables": {
+        "BUILD_EXAMPLE_LEXERS": true
+      }
+    },
+    {
       "name": "project-name",
       "hidden": true,
       "description": "Set the project name from the preset name",
@@ -30,6 +38,11 @@
       "name": "default",
       "displayName": "Configure with default settings",
       "inherits": [ "sibling-build-preset", "vcpkg", "project-name" ]
+    },
+    {
+      "name": "example",
+      "displayName": "Configure with example settings",
+      "inherits": [ "sibling-build-preset", "vcpkg", "project-name", "build-example-lexers" ]
     }
   ],
   "buildPresets": [
@@ -37,16 +50,32 @@
       "name": "default",
       "displayName": "Build with default settings",
       "configurePreset": "default"
+    },
+    {
+      "name": "example",
+      "displayName": "Build with example settings",
+      "configurePreset": "example"
     }
   ],
   "testPresets": [
     {
-      "name": "default",
-      "displayName": "Test with default settings",
-      "configurePreset": "default",
+      "name": "settings",
+      "hidden": true,
       "output": {
         "outputOnFailure": true
       }
+    },
+    {
+      "name": "default",
+      "displayName": "Test with default settings",
+      "configurePreset": "default",
+      "inherits": [ "settings" ]
+    },
+    {
+      "name": "example",
+      "displayName": "Test with example settings",
+      "configurePreset": "example",
+      "inherits": [ "settings" ]
     }
   ],
   "workflowPresets": [
@@ -65,6 +94,24 @@
         {
           "type": "test",
           "name": "default"
+        }
+      ]
+    },
+    {
+      "name": "examples",
+      "displayName": "Workflow with example settings: configure, build and test",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "example"
+        },
+        {
+          "type": "build",
+          "name": "example"
+        },
+        {
+          "type": "test",
+          "name": "example"
         }
       ]
     }

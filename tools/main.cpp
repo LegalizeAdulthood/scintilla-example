@@ -54,11 +54,15 @@ void MyFrame::load_language_theme()
     typewriter.SetFamily(wxFONTFAMILY_TELETYPE);
     typewriter.SetPointSize(12);
     typewriter.SetFaceName("consolas");
-    m_stc->StyleSetFont(+formula::Syntax::DEFAULT, typewriter);
+    m_stc->StyleSetFont(+formula::Syntax::NONE, typewriter);
     m_stc->StyleSetFont(+formula::Syntax::COMMENT, typewriter);
+    m_stc->StyleSetFont(+formula::Syntax::KEYWORD, typewriter);
     wxColour purple;
     wxFromString("purple", &purple);
     m_stc->StyleSetForeground(+formula::Syntax::COMMENT, purple);
+    wxColor blue;
+    wxFromString("blue", &blue);
+    m_stc->StyleSetForeground(+formula::Syntax::KEYWORD, blue);
 }
 
 void MyFrame::on_exit(wxCommandEvent &/*event*/)

@@ -9,11 +9,79 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cstdlib>
 #include <cstring>
+#include <iterator>
 #include <sstream>
 #include <string>
+#include <vector>
 
 using namespace testing;
+
+inline Sci_Position as_pos(size_t value)
+{
+    return static_cast<Sci_Position>(value);
+}
+
+MATCHER_P2(has_repeated_style_bytes, style_, size_, "")
+{
+    if (arg == nullptr)
+    {
+        *result_listener << "got nullptr for style bytes";
+        return false;
+    }
+
+    bool result{true};
+    for (size_t i = 0; i < size_; ++i)
+    {
+        std::uint8_t actual{static_cast<std::uint8_t>(arg[i])};
+        if (actual != static_cast<std::uint8_t>(style_))
+        {
+            if (!result)
+            {
+                *result_listener << ", ";
+            }
+            *result_listener << "[" << i << "]: expected " << +style_ << ", got " << static_cast<int>(actual);
+            result = false;
+        }
+    }
+
+    if (result)
+    {
+        *result_listener << size_ << " style bytes match " << +style_;
+    }
+    return result;
+}
+
+MATCHER_P(has_style_bytes, expected, "")
+{
+    if (arg == nullptr)
+    {
+        *result_listener << "got nullptr for style bytes";
+        return false;
+    }
+
+    bool result{true};
+    for (size_t i = 0; i < expected.size(); ++i)
+    {
+        if (arg[i] != expected[i])
+        {
+            if (!result)
+            {
+                *result_listener << ", ";
+            }
+            *result_listener << "[" << i << "]: expected " << static_cast<int>(expected[i]) << ", got " << static_cast<int>(arg[i]);
+            result = false;
+        }
+    }
+
+    if (result)
+    {
+        *result_listener << expected.size() << " style bytes match";
+    }
+    return result;
+}
 
 class TestPlugin : public Test
 {
@@ -239,15 +307,92 @@ void TestLexText::SetUp()
 TEST_F(TestLexText, lexSemiColon)
 {
     m_text = ";";
-    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(static_cast<Sci_Position>(m_text.size())));
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
     EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
     EXPECT_CALL(m_doc, LineFromPosition(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
-    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(static_cast<Sci_Position>(m_text.size())));
-    EXPECT_CALL(m_doc, GetCharRange(_, 0, 1))
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
         .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
             { std::strncpy(dest, m_text.substr(start, len).data(), len); });
-    EXPECT_CALL(m_doc, SetStyles(+formula::Syntax::COMMENT, _)).WillOnce(Return(true));
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::COMMENT, m_text.size())))
+        .WillOnce(Return(true));
 
-    m_lexer->Lex(0, static_cast<Sci_Position>(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+TEST_F(TestLexText, lexComment)
+{
+    m_text = "; this is a comment";
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(_)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::COMMENT, m_text.size())))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+TEST_F(TestLexText, lexMultipleCommentLines)
+{
+    m_text = "; first\n"
+             "; second\n";
+    std::vector<char> expected_styles;
+    expected_styles.resize(m_text.size());
+    std::fill(expected_styles.begin(), expected_styles.end(), static_cast<char>(+formula::Syntax::COMMENT));
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(_)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(expected_styles)))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+TEST_F(TestLexText, lexIfKeyword)
+{
+    m_text = "if";
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(_)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(1))).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::KEYWORD, m_text.size())))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+TEST_F(TestLexText, lexCommentKeyword)
+{
+    const std::string comment{"; comment\n"};
+    const std::string keyword{"if"};
+    m_text = comment + keyword;
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(1)).WillRepeatedly(Return(12));
+    EXPECT_CALL(m_doc, LineStart(Ge(2))).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, LineFromPosition(12)).WillRepeatedly(Return(1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    std::vector<char> styles;
+    styles.resize(m_text.size());
+    std::fill_n(styles.begin(), comment.size(), static_cast<char>(+formula::Syntax::COMMENT));
+    std::fill_n(styles.begin() + comment.size(), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(styles)))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
 }

@@ -5,11 +5,12 @@ namespace formula
 
 enum class Syntax : int
 {
-    DEFAULT = 0,
+    NONE = 0,
     COMMENT = 1,
+    KEYWORD = 2,
 };
 
-inline int operator+(Syntax value)
+constexpr int operator+(Syntax value)
 {
     return static_cast<int>(value);
 }
