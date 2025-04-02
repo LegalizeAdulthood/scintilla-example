@@ -10,6 +10,7 @@
 #include <StyleContext.h>
 #include <WordList.h>
 
+#include <cctype>
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -44,6 +45,9 @@ private:
     CharacterSet m_keyword_charset{CharacterSet::setAlpha};
     CharacterSet m_function_charset{CharacterSet::setAlphaNum};
     CharacterSet m_whitespace_charset{CharacterSet::setNone, " \t\v\f"};
+    CharacterSet m_identifier_charset{CharacterSet::setAlphaNum};
+    bool m_maybe_keyword{};
+    bool m_maybe_function{};
 };
 
 Lexer::Lexer()
@@ -141,6 +145,13 @@ bool Lexer::finish_state(StyleContext &sc)
         }
         break;
 
+    case +formula::Syntax::IDENTIFIER:
+        if (sc.ch == ';' || !m_identifier_charset.Contains(sc.ch))
+        {
+            sc.SetState(+formula::Syntax::NONE);
+        }
+        break;
+
     default:
         break;
     }
@@ -149,6 +160,37 @@ bool Lexer::finish_state(StyleContext &sc)
 
 void Lexer::begin_state(StyleContext &sc)
 {
+    if (sc.state == +formula::Syntax::IDENTIFIER)
+    {
+        m_maybe_keyword = m_keyword_charset.Contains(sc.ch) && m_maybe_keyword;
+        m_maybe_function = m_function_charset.Contains(sc.ch) && m_maybe_function;
+
+        if (m_maybe_keyword)
+        {
+            char buffer[80];
+            sc.GetCurrentLowered(buffer, sizeof(buffer));
+            std::string current{buffer};
+            current += static_cast<char>(std::tolower(sc.ch));
+            if (m_keywords.InList(current.c_str()))
+            {
+                sc.ChangeState(+formula::Syntax::KEYWORD);
+                return;
+            }
+        }
+
+        if (m_maybe_function)
+        {
+            char buffer[80];
+            sc.GetCurrentLowered(buffer, sizeof(buffer));
+            std::string current{buffer};
+            current += static_cast<char>(std::tolower(sc.ch));
+            if (m_functions.InList(current.c_str()))
+            {
+                sc.ChangeState(+formula::Syntax::FUNCTION);
+                return;
+            }
+        }
+    }
     if (sc.state != +formula::Syntax::NONE)
     {
         return;
@@ -166,30 +208,12 @@ void Lexer::begin_state(StyleContext &sc)
         return;
     }
 
-    if (m_keyword_charset.Contains(sc.ch))
+    if (m_identifier_charset.Contains(sc.ch))
     {
-        char buffer[80];
-        sc.GetCurrent(buffer, sizeof(buffer));
-        std::string current{buffer};
-        current += static_cast<char>(sc.ch);
-        if (m_keywords.InList(current.c_str()))
-        {
-            sc.ChangeState(+formula::Syntax::KEYWORD);
-            return;
-        }
-    }
-
-    if (m_function_charset.Contains(sc.ch))
-    {
-        char buffer[80];
-        sc.GetCurrent(buffer, sizeof(buffer));
-        std::string current{buffer};
-        current += static_cast<char>(sc.ch);
-        if (m_functions.InList(current.c_str()))
-        {
-            sc.ChangeState(+formula::Syntax::FUNCTION);
-            return;
-        }
+        sc.SetState(+formula::Syntax::IDENTIFIER);
+        m_maybe_keyword = m_keyword_charset.Contains(sc.ch);
+        m_maybe_function = m_function_charset.Contains(sc.ch);
+        return;
     }
 }
 void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)

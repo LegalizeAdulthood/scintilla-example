@@ -435,10 +435,10 @@ TEST_F(TestLexText, lexCommentKeyword)
 
 TEST_F(TestLexText, lexOtherTextKeyword)
 {
-    const std::string other{"whiff"};
+    const std::string identifier{"whiff"};
     const std::string whitespace{" \t\v\f"};
     const std::string keyword{"if"};
-    m_text = other + whitespace + keyword;
+    m_text = identifier + whitespace + keyword;
     EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
     EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
     EXPECT_CALL(m_doc, LineFromPosition(11)).WillRepeatedly(Return(-1));
@@ -448,7 +448,7 @@ TEST_F(TestLexText, lexOtherTextKeyword)
         .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
             { std::strncpy(dest, m_text.substr(start, len).data(), len); });
     std::vector<char> styles;
-    std::fill_n(std::back_inserter(styles), other.size(), static_cast<char>(+formula::Syntax::NONE));
+    std::fill_n(std::back_inserter(styles), identifier.size(), static_cast<char>(+formula::Syntax::IDENTIFIER));
     std::fill_n(std::back_inserter(styles), whitespace.size(), static_cast<char>(+formula::Syntax::WHITESPACE));
     std::fill_n(std::back_inserter(styles), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
@@ -462,8 +462,10 @@ TEST_F(TestLexText, lexKeywordFunction)
     const std::string keyword{"if"};
     const std::string whitespace{" "};
     const std::string function{"sin"};
-    const std::string other{"(z)"};
-    m_text = keyword + whitespace + function + whitespace + other;
+    const std::string other1{"("};
+    const std::string identifier{"z"};
+    const std::string other2{")"};
+    m_text = keyword + whitespace + function + whitespace + other1 + identifier + other2;
     EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
     EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
     EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(-1));
@@ -477,7 +479,31 @@ TEST_F(TestLexText, lexKeywordFunction)
     std::fill_n(std::back_inserter(styles), whitespace.size(), static_cast<char>(+formula::Syntax::WHITESPACE));
     std::fill_n(std::back_inserter(styles), function.size(), static_cast<char>(+formula::Syntax::FUNCTION));
     std::fill_n(std::back_inserter(styles), whitespace.size(), static_cast<char>(+formula::Syntax::WHITESPACE));
+    std::fill_n(std::back_inserter(styles), other1.size(), static_cast<char>(+formula::Syntax::NONE));
+    std::fill_n(std::back_inserter(styles), identifier.size(), static_cast<char>(+formula::Syntax::IDENTIFIER));
+    std::fill_n(std::back_inserter(styles), other2.size(), static_cast<char>(+formula::Syntax::NONE));
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+TEST_F(TestLexText, lexOtherKeyword)
+{
+    const std::string other{"("};
+    const std::string keyword{"if"};
+    m_text = other + keyword;
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(0))).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    std::vector<char> styles;
     std::fill_n(std::back_inserter(styles), other.size(), static_cast<char>(+formula::Syntax::NONE));
+    std::fill_n(std::back_inserter(styles), keyword.size(), static_cast<char>(+formula::Syntax::KEYWORD));
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
         .WillOnce(Return(true));
 

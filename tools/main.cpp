@@ -58,15 +58,19 @@ void MyFrame::load_language_theme()
     m_stc->StyleSetFont(+formula::Syntax::KEYWORD, typewriter);
     m_stc->StyleSetFont(+formula::Syntax::WHITESPACE, typewriter);
     m_stc->StyleSetFont(+formula::Syntax::FUNCTION, typewriter);
-    wxColour purple;
-    wxASSERT(wxFromString("purple", &purple));
-    m_stc->StyleSetForeground(+formula::Syntax::COMMENT, purple);
-    wxColor blue;
-    wxASSERT(wxFromString("blue", &blue));
-    m_stc->StyleSetForeground(+formula::Syntax::KEYWORD, blue);
-    wxColor orange;
-    wxASSERT(wxFromString("orange", &orange));
-    m_stc->StyleSetForeground(+formula::Syntax::FUNCTION, orange);
+    m_stc->StyleSetFont(+formula::Syntax::IDENTIFIER, typewriter);
+    wxColour comment;
+    wxASSERT(wxFromString("forest green", &comment));
+    m_stc->StyleSetForeground(+formula::Syntax::COMMENT, comment);
+    wxColor keyword;
+    wxASSERT(wxFromString("blue", &keyword));
+    m_stc->StyleSetForeground(+formula::Syntax::KEYWORD, keyword);
+    wxColor function;
+    wxASSERT(wxFromString("red", &function));
+    m_stc->StyleSetForeground(+formula::Syntax::FUNCTION, function);
+    wxColor identifier;
+    wxASSERT(wxFromString("purple", &identifier));
+    m_stc->StyleSetForeground(+formula::Syntax::IDENTIFIER, identifier);
 }
 
 void MyFrame::on_exit(wxCommandEvent &/*event*/)
