@@ -22,9 +22,10 @@ public:
 class ScintillaFrame : public wxFrame
 {
 public:
-    ScintillaFrame(const wxString& title);
+    ScintillaFrame(const wxString &title);
 
 private:
+    void set_style_font_color(formula::Syntax style, const wxFont &font, const char *color_name);
     void load_language_theme();
     void on_exit(wxCommandEvent &event);
     void show_hide_line_numbers();
@@ -68,29 +69,25 @@ ScintillaFrame::ScintillaFrame(const wxString &title) :
     show_hide_line_numbers();
 }
 
+void ScintillaFrame::set_style_font_color(formula::Syntax style, const wxFont &font, const char *color_name)
+{
+    m_stc->StyleSetFont(+style, font);
+    wxColour color;
+    wxASSERT(wxFromString(color_name, &color));
+    m_stc->StyleSetForeground(+style, color);
+}
+
 void ScintillaFrame::load_language_theme()
 {
     wxFont typewriter;
     typewriter.SetFamily(wxFONTFAMILY_TELETYPE);
     typewriter.SetPointSize(12);
-    m_stc->StyleSetFont(+formula::Syntax::NONE, typewriter);
-    m_stc->StyleSetFont(+formula::Syntax::COMMENT, typewriter);
-    m_stc->StyleSetFont(+formula::Syntax::KEYWORD, typewriter);
-    m_stc->StyleSetFont(+formula::Syntax::WHITESPACE, typewriter);
-    m_stc->StyleSetFont(+formula::Syntax::FUNCTION, typewriter);
-    m_stc->StyleSetFont(+formula::Syntax::IDENTIFIER, typewriter);
-    wxColour comment;
-    wxASSERT(wxFromString("forest green", &comment));
-    m_stc->StyleSetForeground(+formula::Syntax::COMMENT, comment);
-    wxColor keyword;
-    wxASSERT(wxFromString("blue", &keyword));
-    m_stc->StyleSetForeground(+formula::Syntax::KEYWORD, keyword);
-    wxColor function;
-    wxASSERT(wxFromString("red", &function));
-    m_stc->StyleSetForeground(+formula::Syntax::FUNCTION, function);
-    wxColor identifier;
-    wxASSERT(wxFromString("purple", &identifier));
-    m_stc->StyleSetForeground(+formula::Syntax::IDENTIFIER, identifier);
+    set_style_font_color(formula::Syntax::NONE, typewriter, "black");
+    set_style_font_color(formula::Syntax::COMMENT, typewriter, "forest green");
+    set_style_font_color(formula::Syntax::KEYWORD, typewriter, "blue");
+    set_style_font_color(formula::Syntax::WHITESPACE, typewriter, "black");
+    set_style_font_color(formula::Syntax::FUNCTION, typewriter, "red");
+    set_style_font_color(formula::Syntax::IDENTIFIER, typewriter, "purple");
     m_stc->SetMarginType(+MarginIndex::LINE_NUMBER, wxSTC_MARGIN_NUMBER);
     m_stc->SetMarginWidth(+MarginIndex::LINE_NUMBER, 0);
     m_line_margin_width = m_stc->TextWidth(wxSTC_STYLE_LINENUMBER, "_99999");
