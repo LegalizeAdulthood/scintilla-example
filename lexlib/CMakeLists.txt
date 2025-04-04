@@ -44,7 +44,7 @@ target_include_directories(lexlib PUBLIC ${LEXLIB_DIR})
 target_link_libraries(lexlib PUBLIC Scintilla)
 target_folder(lexlib "Libraries")
 
-option(BUILD_EXAMPLE_LEXERS OFF)
+option(BUILD_EXAMPLE_LEXERS ON)
 if(BUILD_EXAMPLE_LEXERS)
     set(LEXERS_DIR "${Scintilla_ROOT}/lexers")
     add_library(lexer-examples STATIC
