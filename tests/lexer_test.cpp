@@ -509,3 +509,37 @@ TEST_F(TestLexText, lexOtherKeyword)
 
     m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
 }
+
+TEST_F(TestLexText, functionJunkIsNotAFunction)
+{
+    m_text = "sinjunk";
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(0))).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(+formula::Syntax::IDENTIFIER, m_text.size())))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}
+
+TEST_F(TestLexText, keywordJunkIsNotAKeyword)
+{
+    m_text = "ifjunk";
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(Ge(0))).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(+formula::Syntax::IDENTIFIER, m_text.size())))
+        .WillOnce(Return(true));
+
+    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+}

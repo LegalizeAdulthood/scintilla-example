@@ -171,7 +171,7 @@ void Lexer::begin_state(StyleContext &sc)
             sc.GetCurrentLowered(buffer, sizeof(buffer));
             std::string current{buffer};
             current += static_cast<char>(std::tolower(sc.ch));
-            if (m_keywords.InList(current.c_str()))
+            if (m_keywords.InList(current.c_str()) && !m_keyword_charset.Contains(sc.chNext))
             {
                 sc.ChangeState(+formula::Syntax::KEYWORD);
                 return;
@@ -184,7 +184,7 @@ void Lexer::begin_state(StyleContext &sc)
             sc.GetCurrentLowered(buffer, sizeof(buffer));
             std::string current{buffer};
             current += static_cast<char>(std::tolower(sc.ch));
-            if (m_functions.InList(current.c_str()))
+            if (m_functions.InList(current.c_str()) && !m_function_charset.Contains(sc.chNext))
             {
                 sc.ChangeState(+formula::Syntax::FUNCTION);
                 return;
