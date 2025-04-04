@@ -1,5 +1,17 @@
 set(Scintilla_ROOT ${CMAKE_SOURCE_DIR}/scintilla)
 
+set(SCINTILLA_DIR ${Scintilla_ROOT}/include)
+add_library(Scintilla INTERFACE
+    ${SCINTILLA_DIR}/ILexer.h
+    ${SCINTILLA_DIR}/Platform.h
+    ${SCINTILLA_DIR}/SciLexer.h
+    ${SCINTILLA_DIR}/Scintilla.h
+    ${SCINTILLA_DIR}/ScintillaWidget.h
+    ${SCINTILLA_DIR}/Sci_Position.h
+)
+target_include_directories(Scintilla INTERFACE ${Scintilla_ROOT}/include)
+target_folder(Scintilla "Libraries")
+
 set(LEXLIB_DIR ${Scintilla_ROOT}/lexlib)
 add_library(lexlib STATIC
     ${LEXLIB_DIR}/Accessor.h
@@ -28,7 +40,8 @@ add_library(lexlib STATIC
     ${LEXLIB_DIR}/StyleContext.cxx
     ${LEXLIB_DIR}/WordList.cxx
 )
-target_include_directories(lexlib PUBLIC ${LEXLIB_DIR} ${Scintilla_ROOT}/include)
+target_include_directories(lexlib PUBLIC ${LEXLIB_DIR})
+target_link_libraries(lexlib PUBLIC Scintilla)
 target_folder(lexlib "Libraries")
 
 option(BUILD_EXAMPLE_LEXERS OFF)
