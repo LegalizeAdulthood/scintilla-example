@@ -324,7 +324,7 @@ TEST_F(TestLexText, lexSemiColon)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::COMMENT, m_text.size())))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 TEST_F(TestLexText, lexComment)
@@ -340,7 +340,7 @@ TEST_F(TestLexText, lexComment)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::COMMENT, m_text.size())))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 TEST_F(TestLexText, lexMultipleCommentLines)
@@ -360,7 +360,7 @@ TEST_F(TestLexText, lexMultipleCommentLines)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), expected_styles)))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 class LexKeyword : public TestLexText, public WithParamInterface<std::string>
@@ -380,7 +380,7 @@ TEST_P(LexKeyword, lex)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::KEYWORD, m_text.size())))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestKeyword, LexKeyword, Values("if", "endif", "elseif", "else"));
@@ -402,7 +402,7 @@ TEST_P(LexFunction, lex)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(formula::Syntax::FUNCTION, m_text.size())))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 INSTANTIATE_TEST_SUITE_P(TestFunction, LexFunction,
@@ -430,7 +430,7 @@ TEST_F(TestLexText, lexCommentKeyword)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 TEST_F(TestLexText, lexOtherTextKeyword)
@@ -454,7 +454,7 @@ TEST_F(TestLexText, lexOtherTextKeyword)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 TEST_F(TestLexText, lexKeywordFunction)
@@ -485,7 +485,7 @@ TEST_F(TestLexText, lexKeywordFunction)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 TEST_F(TestLexText, lexOtherKeyword)
@@ -507,7 +507,7 @@ TEST_F(TestLexText, lexOtherKeyword)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_style_bytes(m_text.size(), styles)))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 TEST_F(TestLexText, functionJunkIsNotAFunction)
@@ -524,7 +524,7 @@ TEST_F(TestLexText, functionJunkIsNotAFunction)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(+formula::Syntax::IDENTIFIER, m_text.size())))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
 
 TEST_F(TestLexText, keywordJunkIsNotAKeyword)
@@ -541,5 +541,5 @@ TEST_F(TestLexText, keywordJunkIsNotAKeyword)
     EXPECT_CALL(m_doc, SetStyles(as_pos(m_text.size()), has_repeated_style_bytes(+formula::Syntax::IDENTIFIER, m_text.size())))
         .WillOnce(Return(true));
 
-    m_lexer->Lex(0, as_pos(m_text.size()), 0, &m_doc);
+    m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
