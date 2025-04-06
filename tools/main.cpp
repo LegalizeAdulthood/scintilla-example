@@ -7,6 +7,7 @@
 enum class MarginIndex
 {
     LINE_NUMBER = 0,
+    FOLDING = 1,
 };
 inline int operator+(MarginIndex value)
 {
@@ -29,12 +30,17 @@ private:
     void load_language_theme();
     void on_exit(wxCommandEvent &event);
     void show_hide_line_numbers();
+    void show_hide_folding();
     void on_view_line_numbers(wxCommandEvent &event);
+    void on_view_folding(wxCommandEvent &event);
 
     wxMenuItem *m_view_lines{};
+    wxMenuItem *m_view_folding{};
     wxStyledTextCtrl *m_stc{};
     int m_line_margin_width{};
+    int m_folding_margin_width{20};
     bool m_show_lines{};
+    bool m_show_folding{true};
 };
 
 wxIMPLEMENT_APP(ScintillaApp);
@@ -55,8 +61,10 @@ ScintillaFrame::ScintillaFrame(const wxString &title) :
     menu_bar->Append(file, "&File");
     wxMenu *view = new wxMenu;
     m_view_lines = view->Append(wxID_ANY, "&Line Numbers", "Line Numbers", wxITEM_CHECK);
-    menu_bar->Append(view, "&View");
     Bind(wxEVT_MENU, &ScintillaFrame::on_view_line_numbers, this, m_view_lines->GetId());
+    m_view_folding = view->Append(wxID_ANY, "&Folding", "Folding", wxITEM_CHECK);
+    Bind(wxEVT_MENU, &ScintillaFrame::on_view_folding, this, m_view_folding->GetId());
+    menu_bar->Append(view, "&View");
     wxFrameBase::SetMenuBar(menu_bar);
     Bind(wxEVT_MENU, &ScintillaFrame::on_exit, this, wxID_EXIT);
 
@@ -104,8 +112,20 @@ void ScintillaFrame::show_hide_line_numbers()
     m_view_lines->Check(m_show_lines);
 }
 
-void ScintillaFrame::on_view_line_numbers(wxCommandEvent &event)
+void ScintillaFrame::show_hide_folding()
+{
+    m_stc->SetMarginWidth(+MarginIndex::FOLDING, m_show_folding ? m_folding_margin_width : 0);
+    m_view_folding->Check(m_show_folding);
+}
+
+void ScintillaFrame::on_view_line_numbers(wxCommandEvent &/*event*/)
 {
     m_show_lines = !m_show_lines;
     show_hide_line_numbers();
+}
+
+void ScintillaFrame::on_view_folding(wxCommandEvent &/*event*/)
+{
+    m_show_folding = !m_show_folding;
+    show_hide_folding();
 }
