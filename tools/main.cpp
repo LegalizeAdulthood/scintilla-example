@@ -27,12 +27,16 @@ public:
 
 private:
     void set_style_font_color(formula::Syntax style, const wxFont &font, const char *color_name);
-    void load_language_theme();
-    void on_exit(wxCommandEvent &event);
+    void init_lexer();
+    void init_coloring();
+    void init_line_numbers();
+    void init_folding();
     void show_hide_line_numbers();
     void show_hide_folding();
     void on_view_line_numbers(wxCommandEvent &event);
     void on_view_folding(wxCommandEvent &event);
+    void on_margin_click(wxStyledTextEvent &event);
+    void on_exit(wxCommandEvent &event);
 
     wxMenuItem *m_view_lines{};
     wxMenuItem *m_view_folding{};
@@ -69,16 +73,10 @@ ScintillaFrame::ScintillaFrame(const wxString &title) :
     Bind(wxEVT_MENU, &ScintillaFrame::on_exit, this, wxID_EXIT);
 
     m_stc = new wxStyledTextCtrl(this, wxID_ANY);
-    m_stc->LoadLexerLibrary(wxT("./formula-lexer") + wxDynamicLibrary::GetDllExt(wxDL_LIBRARY));
-    m_stc->SetLexerLanguage(wxT("id-formula"));
-    load_language_theme();
-    m_stc->SetMarginType(+MarginIndex::LINE_NUMBER, wxSTC_MARGIN_NUMBER);
-    m_line_margin_width = m_stc->TextWidth(wxSTC_STYLE_LINENUMBER, "_99999");
-    m_stc->SetMarginType(+MarginIndex::FOLDING, wxSTC_MARGIN_SYMBOL);
-    m_stc->Colourise(0, -1);
-
-    show_hide_line_numbers();
-    show_hide_folding();
+    init_lexer();
+    init_coloring();
+    init_line_numbers();
+    init_folding();
 }
 
 void ScintillaFrame::set_style_font_color(formula::Syntax style, const wxFont &font, const char *color_name)
@@ -89,7 +87,13 @@ void ScintillaFrame::set_style_font_color(formula::Syntax style, const wxFont &f
     m_stc->StyleSetForeground(+style, color);
 }
 
-void ScintillaFrame::load_language_theme()
+void ScintillaFrame::init_lexer()
+{
+    m_stc->LoadLexerLibrary(wxT("./formula-lexer") + wxDynamicLibrary::GetDllExt(wxDL_LIBRARY));
+    m_stc->SetLexerLanguage(wxT("id-formula"));
+}
+
+void ScintillaFrame::init_coloring()
 {
     wxFont typewriter;
     typewriter.SetFamily(wxFONTFAMILY_TELETYPE);
@@ -100,11 +104,29 @@ void ScintillaFrame::load_language_theme()
     set_style_font_color(formula::Syntax::WHITESPACE, typewriter, "black");
     set_style_font_color(formula::Syntax::FUNCTION, typewriter, "red");
     set_style_font_color(formula::Syntax::IDENTIFIER, typewriter, "purple");
+    m_stc->Colourise(0, -1);
 }
 
-void ScintillaFrame::on_exit(wxCommandEvent & /*event*/)
+void ScintillaFrame::init_line_numbers()
 {
-    Close(true);
+    m_stc->SetMarginType(+MarginIndex::LINE_NUMBER, wxSTC_MARGIN_NUMBER);
+    m_line_margin_width = m_stc->TextWidth(wxSTC_STYLE_LINENUMBER, "_99999");
+    show_hide_line_numbers();
+}
+
+void ScintillaFrame::init_folding()
+{
+    m_stc->SetMarginType(+MarginIndex::FOLDING, wxSTC_MARGIN_SYMBOL);
+    for (int i = wxSTC_MARKNUM_FOLDEREND; i <= wxSTC_MARKNUM_FOLDEROPEN; ++i)
+    {
+        m_stc->MarkerDefine(i, wxSTC_MARK_EMPTY);
+    }
+    m_stc->MarkerDefine(wxSTC_MARKNUM_FOLDEROPEN, wxSTC_MARK_ARROWDOWN);
+    m_stc->MarkerDefine(wxSTC_MARKNUM_FOLDER, wxSTC_MARK_ARROW);
+    m_stc->SetMarginMask(+MarginIndex::FOLDING, wxSTC_MASK_FOLDERS);
+    m_stc->SetMarginSensitive(+MarginIndex::FOLDING, true);
+    Bind(wxEVT_STC_MARGINCLICK, &ScintillaFrame::on_margin_click, this, m_stc->GetId());
+    show_hide_folding();
 }
 
 void ScintillaFrame::show_hide_line_numbers()
@@ -130,4 +152,14 @@ void ScintillaFrame::on_view_folding(wxCommandEvent &/*event*/)
 {
     m_show_folding = !m_show_folding;
     show_hide_folding();
+}
+
+void ScintillaFrame::on_margin_click(wxStyledTextEvent &event)
+{
+    m_stc->ToggleFold(m_stc->LineFromPosition(event.GetPosition()));
+}
+
+void ScintillaFrame::on_exit(wxCommandEvent & /*event*/)
+{
+    Close(true);
 }

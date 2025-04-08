@@ -1,6 +1,7 @@
 #include <formula/syntax.h>
 
 #include <ILexer.h>
+#include <Scintilla.h>
 
 #include <assert.h>  // NOLINT(modernize-deprecated-headers); needed by LexAccessor.h
 #include <stddef.h>  // NOLINT(modernize-deprecated-headers); needed by CharacterSet.h
@@ -98,10 +99,6 @@ Sci_Position Lexer::WordListSet(int /*n*/, const char * /*wl*/)
     return -1;
 }
 
-void Lexer::Fold(Sci_PositionU /*start*/, Sci_Position /*len*/, int /*init_style*/, IDocument */*doc*/)
-{
-}
-
 void *Lexer::PrivateCall(int /*operation*/, void */*pointer*/)
 {
     return nullptr;
@@ -170,7 +167,7 @@ void Lexer::begin_state(StyleContext &sc)
             char buffer[80];
             sc.GetCurrentLowered(buffer, sizeof(buffer));
             std::string current{buffer};
-            current += static_cast<char>(std::tolower(sc.ch));
+            current += static_cast<char>(std::tolower(static_cast<unsigned char>(sc.ch)));
             if (m_keywords.InList(current.c_str()) && !m_keyword_charset.Contains(sc.chNext))
             {
                 sc.ChangeState(+formula::Syntax::KEYWORD);
@@ -231,6 +228,52 @@ void Lexer::Lex(Sci_PositionU start, Sci_Position len, int init_style, IDocument
         }
     }
     sc.Complete();
+}
+
+void Lexer::Fold(Sci_PositionU start, Sci_Position len, int init_style, IDocument *doc)
+{
+    LexAccessor accessor{doc};
+    StyleContext sc{start, static_cast<Sci_PositionU>(len), init_style, accessor};
+    int line = accessor.GetLine(start);
+    int level = accessor.LevelAt(line);
+    std::string text;
+    bool skip_ws{};
+    while (sc.More())
+    {
+        if (sc.Match("\n"))
+        {
+            if (text.substr(0, 2) == "if" && (m_whitespace_charset.Contains(text[2]) || text[2] == '('))
+            {
+                accessor.SetLevel(line, level | SC_FOLDLEVELHEADERFLAG);
+                ++level;
+            }
+            else if (text == "endif")
+            {
+                --level;
+                accessor.SetLevel(line, level);
+            }
+            else
+            {
+                accessor.SetLevel(line, level);
+            }
+            skip_ws = true;
+            text.clear();
+            sc.Forward();
+            ++line;
+            continue;
+        }
+        if (!skip_ws || !m_whitespace_charset.Contains(sc.ch))
+        {
+            text += static_cast<char>(std::tolower(static_cast<unsigned char>(sc.ch)));
+            skip_ws = false;
+        }
+        sc.Forward();
+    }
+    if (!text.empty())
+    {
+        ++line;
+        accessor.SetLevel(line, level);
+    }
 }
 
 using LexerFactoryFunction = ILexer *();

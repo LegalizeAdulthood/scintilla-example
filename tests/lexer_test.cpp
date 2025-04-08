@@ -1,6 +1,7 @@
 #include <formula/syntax.h>
 
 #include <ILexer.h>
+#include <Scintilla.h>
 
 #include <wx/dynlib.h>
 #include <wx/filename.h>
@@ -260,11 +261,6 @@ TEST_F(TestLexer, wordListSetRequiresNoLexing)
 TEST_F(TestLexer, privateCallReturnsNullPtr)
 {
     EXPECT_EQ(nullptr, m_lexer->PrivateCall(0, nullptr));
-}
-
-TEST_F(TestLexer, foldDoesNothing)
-{
-    m_lexer->Fold(0, 0, 0, nullptr);
 }
 
 class MockDocument : public StrictMock<IDocument>
@@ -542,4 +538,32 @@ TEST_F(TestLexText, keywordJunkIsNotAKeyword)
         .WillOnce(Return(true));
 
     m_lexer->Lex(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
+}
+
+TEST_F(TestLexText, ifIncreasesFoldLevel)
+{
+    const std::string line1{"if (1 != 0)\n"};
+    const std::string line2{"\n"};
+    const std::string line3{"endif\n"};
+    const std::string line4{"z = z + 1"};
+    m_text = line1 + line2 + line3 + line4;
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(1)).WillRepeatedly(Return(as_pos(line1.size())));
+    EXPECT_CALL(m_doc, LineStart(2)).WillRepeatedly(Return(as_pos(line1.size() + line2.size())));
+    EXPECT_CALL(m_doc, LineStart(3)).WillRepeatedly(Return(as_pos(line1.size() + line2.size() + line3.size())));
+    EXPECT_CALL(m_doc, LineStart(4)).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineStart(5)).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, GetLevel(0)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(0, SC_FOLDLEVELHEADERFLAG)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(1, 1)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(2, 0)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(4, 0)).WillOnce(Return(0));
+
+    m_lexer->Fold(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
