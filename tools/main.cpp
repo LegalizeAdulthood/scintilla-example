@@ -7,7 +7,7 @@
 enum class MarginIndex
 {
     LINE_NUMBER = 0,
-    FOLDING = 1,
+    FOLDING = 2,
 };
 inline int operator+(MarginIndex value)
 {

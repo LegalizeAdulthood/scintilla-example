@@ -47,6 +47,7 @@ private:
     CharacterSet m_function_charset{CharacterSet::setAlphaNum};
     CharacterSet m_whitespace_charset{CharacterSet::setNone, " \t\v\f"};
     CharacterSet m_identifier_charset{CharacterSet::setAlphaNum};
+    CharacterSet m_fold_keyword_charset{CharacterSet::setAlpha};
     bool m_maybe_keyword{};
     bool m_maybe_function{};
 };
@@ -237,13 +238,20 @@ void Lexer::Fold(Sci_PositionU start, Sci_Position len, int init_style, IDocumen
     int line = accessor.GetLine(start);
     int level = accessor.LevelAt(line);
     std::string text;
-    bool skip_ws{};
+    bool in_keyword{false};
+    bool skip_to_eol{false};
     while (sc.More())
     {
         if (sc.Match("\n"))
         {
-            if (text.substr(0, 2) == "if" && (m_whitespace_charset.Contains(text[2]) || text[2] == '('))
+            if (text == "if")
             {
+                accessor.SetLevel(line, level | SC_FOLDLEVELHEADERFLAG);
+                ++level;
+            }
+            else if (text == "elseif" || text == "else")
+            {
+                --level;
                 accessor.SetLevel(line, level | SC_FOLDLEVELHEADERFLAG);
                 ++level;
             }
@@ -256,16 +264,36 @@ void Lexer::Fold(Sci_PositionU start, Sci_Position len, int init_style, IDocumen
             {
                 accessor.SetLevel(line, level);
             }
-            skip_ws = true;
             text.clear();
             sc.Forward();
             ++line;
+            skip_to_eol = false;
+            in_keyword = false;
             continue;
         }
-        if (!skip_ws || !m_whitespace_charset.Contains(sc.ch))
+
+        if (in_keyword)
         {
-            text += static_cast<char>(std::tolower(static_cast<unsigned char>(sc.ch)));
-            skip_ws = false;
+            if (m_fold_keyword_charset.Contains(sc.ch))
+            {
+                text += static_cast<char>(std::tolower(static_cast<unsigned char>(sc.ch)));
+            }
+            else
+            {
+                in_keyword = false;
+                skip_to_eol = true;
+            }
+        }
+        else if (m_whitespace_charset.Contains(sc.ch))
+        {
+        }
+        else if (!skip_to_eol)
+        {
+            if (m_fold_keyword_charset.Contains(sc.ch))
+            {
+                in_keyword = true;
+                text += static_cast<char>(std::tolower(static_cast<unsigned char>(sc.ch)));
+            }
         }
         sc.Forward();
     }

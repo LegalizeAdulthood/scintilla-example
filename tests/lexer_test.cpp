@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iterator>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -564,6 +565,78 @@ TEST_F(TestLexText, ifIncreasesFoldLevel)
     EXPECT_CALL(m_doc, SetLevel(1, 1)).WillOnce(Return(0));
     EXPECT_CALL(m_doc, SetLevel(2, 0)).WillOnce(Return(0));
     EXPECT_CALL(m_doc, SetLevel(4, 0)).WillOnce(Return(0));
+
+    m_lexer->Fold(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
+}
+
+TEST_F(TestLexText, elseIfIncreasesFoldLevel)
+{
+    const std::string lines[]{
+        {"if (1 != 0)\n"},     // 0
+        {"\n"},                // 1
+        {"elseif (1 != 1)\n"}, // 2
+        {"\n"},                // 3
+        {"endif\n"},           // 4
+        {"z = z + 1"},         // 5
+    };
+    m_text = std::accumulate(std::begin(lines), std::end(lines), std::string{});
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(1)).WillRepeatedly(Return(as_pos(lines[0].size())));
+    EXPECT_CALL(m_doc, LineStart(2)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size())));
+    EXPECT_CALL(m_doc, LineStart(3)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size() + lines[2].size())));
+    EXPECT_CALL(m_doc, LineStart(4)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size() + lines[2].size() + lines[3].size())));
+    EXPECT_CALL(m_doc, LineStart(5)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size() + lines[2].size() + lines[3].size() + lines[4].size())));
+    EXPECT_CALL(m_doc, LineStart(6)).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineStart(7)).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, GetLevel(0)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(0, SC_FOLDLEVELHEADERFLAG)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(1, 1)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(2, SC_FOLDLEVELHEADERFLAG)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(3, 1)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(4, 0)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(6, 0)).WillOnce(Return(0));
+
+    m_lexer->Fold(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
+}
+
+TEST_F(TestLexText, elseIncreasesFoldLevel)
+{
+    const std::string lines[]{
+        {"if (1 != 0)\n"}, // 0
+        {"\n"},            // 1
+        {"else\n"},        // 2
+        {"\n"},            // 3
+        {"endif\n"},       // 4
+        {"z = z + 1"},     // 5
+    };
+    m_text = std::accumulate(std::begin(lines), std::end(lines), std::string{});
+    EXPECT_CALL(m_doc, Length()).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineFromPosition(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineFromPosition(as_pos(m_text.size()))).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(0)).WillRepeatedly(Return(0));
+    EXPECT_CALL(m_doc, LineStart(1)).WillRepeatedly(Return(as_pos(lines[0].size())));
+    EXPECT_CALL(m_doc, LineStart(2)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size())));
+    EXPECT_CALL(m_doc, LineStart(3)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size() + lines[2].size())));
+    EXPECT_CALL(m_doc, LineStart(4)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size() + lines[2].size() + lines[3].size())));
+    EXPECT_CALL(m_doc, LineStart(5)).WillRepeatedly(Return(as_pos(lines[0].size() + lines[1].size() + lines[2].size() + lines[3].size() + lines[4].size())));
+    EXPECT_CALL(m_doc, LineStart(6)).WillRepeatedly(Return(as_pos(m_text.size())));
+    EXPECT_CALL(m_doc, LineStart(7)).WillRepeatedly(Return(-1));
+    EXPECT_CALL(m_doc, GetCharRange(_, 0, as_pos(m_text.size())))
+        .WillRepeatedly([&](char *dest, Sci_Position start, Sci_Position len)
+            { std::strncpy(dest, m_text.substr(start, len).data(), len); });
+    EXPECT_CALL(m_doc, GetLevel(0)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(0, SC_FOLDLEVELHEADERFLAG)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(1, 1)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(2, SC_FOLDLEVELHEADERFLAG)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(3, 1)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(4, 0)).WillOnce(Return(0));
+    EXPECT_CALL(m_doc, SetLevel(6, 0)).WillOnce(Return(0));
 
     m_lexer->Fold(0, as_pos(m_text.size()), +formula::Syntax::NONE, &m_doc);
 }
