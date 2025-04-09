@@ -23,3 +23,38 @@ if(BUILD_TESTING)
 endif()
 
 vs_startup_project(scintilla-example)
+
+add_custom_target(Miscelleanous)
+target_sources(Miscelleanous PRIVATE
+    ".clang-format"
+    ".editorconfig"
+    ".gitignore"
+    ".gitmodules"
+    ".github/workflows/cmake.yml"
+    "CMakePresets.json"
+    "ReadMe.md"
+    "vcpkg.json"
+    "vcpkg-configuration.json"
+    "cmake/cxx_standard_17.cmake"
+    "cmake/target_copy_lexer_plugin.cmake"
+    "cmake/target_folder.cmake"
+    "cmake/target_prefix.cmake"
+    "cmake/vs_startup_project.cmake"
+)
+source_group("CMake Scripts" FILES
+    "cmake/cxx_standard_17.cmake"
+    "cmake/target_copy_lexer_plugin.cmake"
+    "cmake/target_folder.cmake"
+    "cmake/target_prefix.cmake"
+    "cmake/vs_startup_project.cmake")
+source_group("Editing" FILES
+    ".clang-format"
+    ".editorconfig")
+source_group("Git" FILES
+    ".gitignore"
+    ".gitmodules")
+source_group("GitHub" FILES
+    ".github/workflows/cmake.yml")
+source_group("VcPkg" FILES
+    "vcpkg.json"
+    "vcpkg-configuration.json")
