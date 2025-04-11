@@ -16,13 +16,11 @@ add_subdirectory(lexlib)
 add_subdirectory(lexer)
 add_subdirectory(tools)
 
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT scintilla-example)
+vs_startup_project(scintilla-example)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
-
-vs_startup_project(scintilla-example)
 
 add_custom_target(Miscelleanous)
 target_sources(Miscelleanous PRIVATE
